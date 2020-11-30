@@ -1,0 +1,28 @@
+{
+  "name": "contracts",
+  "version": "0.2.0",
+  "description": "Miami University Blockchain Club Ethereum Smart Contracts",
+  "author": "Miami University Blockchain Club",
+  "license": "ISC",
+  "main": "truffle-config.js",
+  "scripts": {
+    "test": "npx truffle test tests/test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/test-environment": "^0.1.3",
+    "@openzeppelin/test-helpers": "^0.5.4",
+    "@truffle/contract": "^4.1.7",
+    "@truffle/hdwallet-provider": "^1.0.30",
+    "chai": "^4.2.0",
+    "dotenv": "^8.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jp4g/incentive-contracts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mublockchain/contracts/issues"
+  },
+  "homepage": "https://github.com/mublockchain/contracts#readme"
+}
