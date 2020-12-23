@@ -6,6 +6,8 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 library Bounties {
 
+    using SafeMath for uint;
+
     modifier onlyActive(Bounty storage _self) {
         require(_self.active, "Bounty Error: Bounty not active!");
         _;
@@ -29,6 +31,23 @@ library Bounties {
         _self.imageUrl = _imageUrl;
         _self.award = _award;
         _self.infinite = _infinite;
+    }
+
+    function apply(Bounty storage _self) internal inStock(_self) active(_self) {
+        _self.pendingNonce = _self.pendingNonce.add(1);
+        _self.pending[_self.pendingNonce];
+    }
+
+    function award(Bounty storage _self, uint _to) internal {
+        address to = _self.pending[_to];
+        require(to != address(0), "Bounty Error: No one to award to!");
+        _self.awarded[_to] = true;
+        _self.holders.push(_to);
+        if (_to != _self.pendingNonce)
+            _self.pending[_to] = _self.pending[_self.pendingNonce];
+        else
+            _self.pending[_self.pendingNonce] = 0;
+        _self.pendingNonce = _self.pendingNonce.sub(1);
     }
 }
 
