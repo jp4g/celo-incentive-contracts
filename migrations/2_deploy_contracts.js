@@ -1,6 +1,6 @@
 require("dotenv").config
-const MUBCTokenContract = artifacts.require("./MUBCItems")
+const AnnouncementContract = artifacts.require("./Announcements")
 
 module.exports = async (deployer) => {
-    await deployer.deploy(MUBCTokenContract)
+    await deployer.deploy(AnnouncementContract)
 }

@@ -20,7 +20,7 @@ library Items {
 
     function initialize(
         Item storage _self,
-        string calldata _name,
+        string calldata _title,
         string calldata _description,
         string calldata _imageUrl,
         uint _cost,
@@ -28,7 +28,7 @@ library Items {
         uint _quantity
     ) internal {
         require(_self.cost == 0, "Item Error: Cannot initialize twice!");
-        _self.name = _name;
+        _self.title = _title;
         _self.description = _description;
         _self.imageUrl = _imageUrl;
         _self.cost = _cost;
@@ -70,7 +70,7 @@ library Items {
 }
 
 struct Item {
-    string name;
+    string title;
     string description;
     string imageUrl;
     uint cost;
