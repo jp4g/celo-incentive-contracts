@@ -26,9 +26,9 @@ library Users {
      */
     function initialize(
         User storage _self,
-        string calldata _name, 
-        string calldata _twitterId,
-        string calldata _imageUrl
+        string memory _name, 
+        string memory _twitterId,
+        string memory _imageUrl
     ) internal {
         _self.name = _name;
         _self.twitterId = _twitterId;

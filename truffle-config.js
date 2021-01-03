@@ -4,17 +4,18 @@ require("dotenv").config()
 module.exports = {
 
   networks: {
-    development: {
+    develop: {
       provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'http://0.0.0.0:8545') },
+      gasLimit: 3000000,
       network_id: "*",
     },
     ropsten: {
       provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'https://ropsten.' + process.env.INFURA) },
       network_id: "3",
     },
-    rinkeby: {
-      provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'https://rinkeby.' + process.env.INFURA) },
-      network_id: "4",
+    kovan: {
+      provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'https://kovan.' + process.env.INFURA) },
+      network_id: "42",
     }
      
   },

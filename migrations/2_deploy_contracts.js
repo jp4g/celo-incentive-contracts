@@ -1,6 +1,5 @@
-require("dotenv").config
-const AnnouncementContract = artifacts.require("./Announcements")
+const CoreContract = artifacts.require("Core")
 
 module.exports = async (deployer) => {
-    await deployer.deploy(AnnouncementContract)
+    await deployer.deploy(CoreContract)
 }

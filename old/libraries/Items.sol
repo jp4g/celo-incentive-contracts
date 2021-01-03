@@ -20,9 +20,9 @@ library Items {
 
     function initialize(
         Item storage _self,
-        string calldata _title,
-        string calldata _description,
-        string calldata _imageUrl,
+        string memory _title,
+        string memory _description,
+        string memory _imageUrl,
         uint _cost,
         bool _infinite,
         uint _quantity
@@ -49,7 +49,7 @@ library Items {
     }
 
     function data(Item storage _self) internal view returns(
-        string memory _name,
+        string memory _title,
         string memory _description,
         string memory _imageUrl,
         uint _cost,
@@ -58,7 +58,7 @@ library Items {
         bool _active,
         address[] memory _owners
     ) {
-        _name = _self.name;
+        _title = _self.title;
         _description = _self.description;
         _imageUrl = _self.imageUrl;
         _cost = _self.cost;

@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Announcements {
+
+    using SafeMath for uint256;
     event AnnouncementAdded(uint256 _nonce);
     event AnnouncementPinned(uint256 _nonce);
 
@@ -22,8 +24,8 @@ contract Announcements {
      * @return _nonce - the nonce of the announcement on-chain
      */
     function addAnnouncement(
-        string calldata _title,
-        string calldata _body,
+        string memory _title,
+        string memory _body,
         bool _pin
     ) public returns (uint256 _nonce) {
         announcementNonce = announcementNonce.add(1);
@@ -96,9 +98,9 @@ contract Announcements {
         _nonce = announcementNonce;
         _pinned = pinnedAnnouncement;
         for (uint i = 0; i < _nonce; i++) {
-            _titles[i] = announcements[i].titles;
-            _bodies[i] = announcements[i].bodies;
-            _timecodes[i] = announcements[i].timecodes;
+            _titles[i] = announcements[i].title;
+            _bodies[i] = announcements[i].body;
+            _timecodes[i] = announcements[i].timecode;
         }
     }
 }
