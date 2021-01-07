@@ -1,28 +1,47 @@
 {
-  "name": "contracts",
-  "version": "0.2.0",
-  "description": "Miami University Blockchain Club Ethereum Smart Contracts",
-  "author": "Miami University Blockchain Club",
-  "license": "ISC",
+  "name": "incentive-contracts",
+  "version": "1.0.0",
+  "description": "incentive contract suite",
   "main": "truffle-config.js",
-  "scripts": {
-    "test": "npx truffle test tests/test"
+  "directories": {
+    "test": "test"
   },
+  "scripts": {
+    "test": "npx truffle test tests/test",
+    "api": "node src/api.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jp4g/incentive-contracts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jp4g/incentive-contracts/issues"
+  },
+  "homepage": "https://github.com/jp4g/incentive-contracts#readme",
   "dependencies": {
+    "@koa/router": "^8.0.6",
+    "@opengsn/gsn": "^2.0.3",
     "@openzeppelin/contracts": "^3.3.0",
     "@openzeppelin/test-environment": "^0.1.3",
     "@openzeppelin/test-helpers": "^0.5.4",
     "@truffle/contract": "^4.1.7",
     "@truffle/hdwallet-provider": "^1.0.30",
     "chai": "^4.2.0",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "fs": "0.0.1-security",
+    "global": "^4.4.0",
+    "google-auth-library": "^6.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "koa": "^2.11.0",
+    "mocha": "^7.0.1",
+    "mysql2": "^2.1.0",
+    "truffle": "^5.1.43",
+    "web3": "^1.2.11"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jp4g/incentive-contracts.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mublockchain/contracts/issues"
-  },
-  "homepage": "https://github.com/mublockchain/contracts#readme"
+  "resolutions": {
+    "eth-lib/keccakjs/sha3": "^1.2.3",
+    "web3/web3-eth/web3-eth-accounts/scrypt.js": "^0.3.0"
+  }
 }

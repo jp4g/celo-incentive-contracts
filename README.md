@@ -1,11 +1,40 @@
-Note: build is included to allow a connection to the smart contract with little difficulty between different hosts running this client. This is not secure, but we can always roll back the chain!
+# OrgToken Contract Suite
 
-You must have the INFURA slug ('infura.io/...') and the wallet MNEMONIC ('word0... word11') to run the api yourself.
-Your wallet must be the mnemonic of the CRON/ deployer. This build is configured for Rinkeby, as stated above.
+### 1: in cli, clone this repo 
+```git clone https://github.com/MUBlockchain/contracts.git```
 
-# Run
-run 'npm run api' to begin the service. Wait until the console prints 'API Initialized' to make requests.
-See https://docs.google.com/document/d/1z3q08ALWsdC4yl8huuMAbYBJhkxiRYW4L34EAPD08-k/edit?usp=sharing for poor but complete documentation of queries. 
+### 2: install dependencies 
+```npm i```
 
+### 3: add environment variables 
+```nano .env```
 
-## There is no user authentication, JWT is in our stack don't @ me
+*Example .env file:*
+```
+INFURA=infura.io/v3/xxxxxxxxxxxxxxxxxxxxxxx
+MNEMONIC=word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12
+```
+
+### 4: run a truffle development console 
+```npx truffle develop```
+
+### 5: build the contracts 
+```compile```
+
+## BRANCHING STEPS: LOCAL DEPLOYMENT AND TESTING
+
+### 6: deploy to the truffle development server 
+```migrate --reset```
+
+### 7: test the application 
+```test tests/test.js``` 
+*yes I know this isn't configured correctly. no i will not do anything about it rn*
+
+## BRANCHING STEPS: LIVE DEPLOYMENT AND TESTING
+*if your preferred network is not listed here you must add it in truffle-config.js*
+
+### 6: deploy to your preferred network (we choose kovan)
+```migrate --network kovan --reset```
+
+### 7: test the application
+```test tests/test.js --network kovan```
