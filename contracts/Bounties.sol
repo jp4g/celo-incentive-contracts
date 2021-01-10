@@ -57,7 +57,7 @@ contract Bounties is IBounties {
         requestNonce = requestNonce.add(1);
         pendingIndices[trigger] = pendingIndices[trigger].add(1);
         pendingRequests[trigger][pendingIndices[trigger]] = requestNonce;
-        Request storage request = requests[_nonce];
+        Request storage request = requests[requestNonce];
         request.user = msg.sender;
         request.bounty = _nonce;
         request.pendingIndex = pendingIndices[trigger];
@@ -75,7 +75,8 @@ contract Bounties is IBounties {
         public
         override
     {
-        Request memory request = pendingRequests[_trigger][_index];
+        uint requestNonce = pendingRequests[_trigger][_index];
+        Request memory request = requests[requestNonce];
         Bounty storage bounty = bounties[request.bounty];
         if (!bounty.infinite) {
             bounty.quantity = bounty.quantity.sub(1);
@@ -84,7 +85,7 @@ contract Bounties is IBounties {
         bounty.status[request.user] = BountyState.Awarded;
         bounty.holders.push(request.user);
         userContract.addBounty(request.user, request.bounty, bounty.award);
-        emit BountyAwarded(request.bounty, request.user, request.award);
+        emit BountyAwarded(request.bounty, request.user, bounty.award);
         removePendingRequest(_trigger, _index);
     }
 
@@ -93,7 +94,8 @@ contract Bounties is IBounties {
         override
         onlyAdmin()
     {
-        Request memory request = pendingRequests[_trigger][_index];
+        requestNonce = pendingRequests[_trigger][_index];
+        Request memory request = requests[requestNonce];
         Bounty storage bounty = bounties[request.bounty];
         bounty.status[request.user] = BountyState.None;
         tempban[request.bounty][request.user] = now;
@@ -115,15 +117,16 @@ contract Bounties is IBounties {
      * @param _index - the index of the pending request to remove
      */
     function removePendingRequest(uint256 _trigger, uint256 _index) internal {
-        uint numPending = pendingIndices[_trigger];
-        Request storage last = pendingRequests[_trigger][numPending];
-        if (_index != numPending) {
-            Request storage swap = requests[_trigger][_index];
+        uint pendingIndex = pendingIndices[_trigger];
+        uint lastNonce = pendingRequests[_trigger][pendingIndex];
+        Request storage last = requests[lastNonce];
+        if (_index != pendingIndex) {
+            uint swapNonce = pendingRequests[_trigger][_index];
+            Request storage swap = requests[swapNonce];
             swap.user = last.user;
             swap.bounty = last.bounty;
         }
-        last.user = address(0);
-        last.bounty = 0;
+        pendingRequests[_trigger][pendingIndex] = 0;
         pendingIndices[_trigger] = pendingIndices[_trigger].sub(1);
     }
 
@@ -131,15 +134,16 @@ contract Bounties is IBounties {
         public
         override
     {
-        uint256 trigger = Trigger.Twitter;
+        uint256 trigger = uint(Trigger.Twitter);
         Request storage request = requests[chainlinkRequests[_requestId]];
         if (_status)
             approveBountyRequest(trigger, request.pendingIndex);
         else
             rejectBountyRequest(trigger, request.pendingIndex);
-        request.fufilled = true;
+        request.fulfilled = true;
         string memory tweet = bounties[request.bounty].tweet;
-        hasRetweeted[tweet][request.user] = _status;
+        string memory username = userContract.getTwitterId(request.user);
+        hasRetweeted[tweet][username] = _status;
     }
 
     /// VIEWABLE FUNCTIONS ///
@@ -158,8 +162,9 @@ contract Bounties is IBounties {
         _users = new address[](_nonce);
         _bounties = new uint256[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
-            _users[i] = pendingRequests[_trigger][i.add(1)].user;
-            _bounties[i] = pendingRequests[_trigger][i.add(1)].bounty;
+            uint requestNonce = pendingRequests[_trigger][i.add(1)];
+            _users[i] = requests[requestNonce].user;
+            _bounties[i] = requests[requestNonce].bounty;
         }
     }
 
@@ -209,12 +214,12 @@ contract Bounties is IBounties {
         return hasRetweeted[_tweet][_userid];
     }
 
-    function checkFufillment(bytes memory _requestId)
+    function checkFufillment(bytes32 _requestId)
         public
         view
         override
         returns (bool)
     {
-        return requests[chainlinkRequests[_requestId]].fufilled;
+        return requests[chainlinkRequests[_requestId]].fulfilled;
     }
 }

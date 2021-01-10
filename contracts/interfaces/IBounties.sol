@@ -18,6 +18,7 @@ abstract contract IBounties {
     event BountyAwarded(uint256 _nonce, address _to, uint256 _minted);
     event BountyRejected(uint256 _nonce, address _to);
     event BountyDelisted(uint256 _nonce);
+    event FLAG(bool _infinite);
 
     /// MODIFIERS ///
 
@@ -219,7 +220,7 @@ abstract contract IBounties {
      * @param _requestId - The requestId of the chainlink job
      *
      */
-    function checkFufillment(bytes memory _requestId) public view virtual returns (bool);
+    function checkFufillment(bytes32 _requestId) public view virtual returns (bool);
 }
 
 enum BountyState {None, Pending, Awarded}
