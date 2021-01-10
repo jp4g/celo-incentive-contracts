@@ -56,7 +56,8 @@ contract Bounties is IBounties {
         uint256 trigger = uint256(bounty.trigger);
         requestNonce = requestNonce.add(1);
         pendingIndices[trigger] = pendingIndices[trigger].add(1);
-        Request storage request = requests[trigger][requestNonce];
+        pendingRequests[trigger][pendingIndices[trigger]] = requestNonce;
+        Request storage request = requests[_nonce];
         request.user = msg.sender;
         request.bounty = _nonce;
         request.pendingIndex = pendingIndices[trigger];
@@ -74,11 +75,11 @@ contract Bounties is IBounties {
         public
         override
     {
-        Pending memory request = pendingRequests[_trigger][_index];
+        Request memory request = pendingRequests[_trigger][_index];
         Bounty storage bounty = bounties[request.bounty];
         if (!bounty.infinite) {
             bounty.quantity = bounty.quantity.sub(1);
-            if (bounty.quantity == 0) delistBounty(pending.bounty);
+            if (bounty.quantity == 0) delistBounty(request.bounty);
         }
         bounty.status[request.user] = BountyState.Awarded;
         bounty.holders.push(request.user);
@@ -92,7 +93,7 @@ contract Bounties is IBounties {
         override
         onlyAdmin()
     {
-        Request memory request = pendings[_trigger][_index];
+        Request memory request = pendingRequests[_trigger][_index];
         Bounty storage bounty = bounties[request.bounty];
         bounty.status[request.user] = BountyState.None;
         tempban[request.bounty][request.user] = now;
@@ -123,7 +124,7 @@ contract Bounties is IBounties {
         }
         last.user = address(0);
         last.bounty = 0;
-        pendingNonces[_trigger] = pendingNonces[_trigger].sub(1);
+        pendingIndices[_trigger] = pendingIndices[_trigger].sub(1);
     }
 
     function fufillChainlinkRequest(bytes32 _requestId, bool _status)
@@ -131,7 +132,7 @@ contract Bounties is IBounties {
         override
     {
         uint256 trigger = Trigger.Twitter;
-        Request storage request = requests[chainlinkRequest[_requestId]];
+        Request storage request = requests[chainlinkRequests[_requestId]];
         if (_status)
             approveBountyRequest(trigger, request.pendingIndex);
         else
@@ -153,12 +154,12 @@ contract Bounties is IBounties {
             uint256[] memory _bounties
         )
     {
-        _nonce = pendingNonces[_trigger];
+        _nonce = pendingIndices[_trigger];
         _users = new address[](_nonce);
         _bounties = new uint256[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
-            _users[i] = pendings[_trigger][i.add(1)].user;
-            _bounties[i] = pendings[_trigger][i.add(1)].bounty;
+            _users[i] = pendingRequests[_trigger][i.add(1)].user;
+            _bounties[i] = pendingRequests[_trigger][i.add(1)].bounty;
         }
     }
 
@@ -214,6 +215,6 @@ contract Bounties is IBounties {
         override
         returns (bool)
     {
-        return chainlinkRequests[_requestId].fufilled;
+        return requests[chainlinkRequests[_requestId]].fufilled;
     }
 }
