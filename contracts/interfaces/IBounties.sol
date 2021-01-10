@@ -58,26 +58,24 @@ abstract contract IBounties {
     ITwitterConsumer consumerInstance;
     address public consumerContract;
     uint256 public bountyNonce;
-    mapping(uint256 => Bounty) public bounties;
-    mapping(uint256 => uint256) pendingNonces;
-    mapping(uint256 => mapping(uint256 => Pending)) pendings;
-    mapping(uint256 => mapping(address => uint256)) tempban;
-
-    // List of Chainlink requests
-    mapping(bytes32 => Request) chainlinkRequests;
-
-    // List to verify a user has retweeted a tweet or not
+    uint256 public requestNonce;
+    mapping(uint256 => Bounty) public bounties; //bounty nonce to bounty struct
+    mapping(uint256 => Request) public requests; //request nonce to request struct
+    mapping(uint256 => uint256) pendingIndices; //trigger enum to pending requests for that trigger
+    mapping(uint256 => mapping(uint256 => uint256)) pendingRequests; //trigger to pending index to request nonce
+    mapping(uint256 => mapping(address => uint256)) tempban; //bounty nonce to user to timecode of ban
+    mapping(bytes32 => uint256) chainlinkRequests; //chainlink request to request nonce
     mapping(string => mapping(string => bool)) hasRetweeted;
 
-    // Map request id to nonce
-    mapping(bytes32 => uint256) requestIdToNonce;
-
-    // Map nonce to request id
-    mapping(uint256 => bytes32) nonceToRequestId;
-
-
-
     /// MUTABLE FUNCTIONS ///
+
+    /**
+     * Initialization function to set consumer contract address for permissions
+     * @dev require consumer contract address == address (0)
+     *
+     * @param _at - the address of the consumer contract
+     */
+    function setConsumer(address _at) public virtual;
 
     /**
      * Add a new bounty to the chain
@@ -116,9 +114,9 @@ abstract contract IBounties {
      * @dev modifier onlyAdmin
      *
      * @param _trigger - uint code of the bounty trigger type
-     * @param _nonce - index of the bounty request
+     * @param _index - index of the bounty request
      */
-    function approveBountyRequest(uint256 _trigger, uint256 _nonce)
+    function approveBountyRequest(uint256 _trigger, uint256 _index)
         public
         virtual;
 
@@ -127,9 +125,9 @@ abstract contract IBounties {
      * @dev modifier onlyAdmin
      *
      * @param _trigger - uint code of the bounty trigger type
-     * @param _nonce - index of the bounty request
+     * @param _index - index of the bounty request
      */
-    function rejectBountyRequest(uint256 _trigger, uint256 _nonce)
+    function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         virtual;
 
@@ -140,6 +138,17 @@ abstract contract IBounties {
      * @param _nonce - the index of the bounty within the contract
      */
     function delistBounty(uint256 _nonce) public virtual;
+
+    /**
+     * Function is called when a Chainlink request is fufilled
+     *
+     * @param _requestId - The id of the Chainlink request that is completed
+     * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
+     *
+     */
+    function fufillChainlinkRequest(bytes32 _requestId, bool _status)
+        public
+        virtual;
 
     /// VIEWABLE FUNCTIONS ///
 
@@ -154,8 +163,8 @@ abstract contract IBounties {
      */
     function pendingBountyRequests(uint256 _trigger)
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _nonce,
             address[] memory _users,
@@ -177,8 +186,8 @@ abstract contract IBounties {
      */
     function getBounties()
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _bountyNonce,
             string[] memory _titles,
@@ -191,50 +200,26 @@ abstract contract IBounties {
             bool[] memory _manuals
         );
 
-        /**
-        * Initialization function to set consumer contract address for permissions
-        * @dev require consumer contract address == address (0)
-        *
-        * @param _at - the address of the consumer contract
-        */
-        function setConsumer(address _at) public virtual;
+    /**
+     * Function determines if a user has rewteeted a tweet or not
+     *
+     * @param _userid - The id of the Chainlink request that is completed
+     * @param _tweet - The status that resolves to whether or not the user has retweeted a particular tweet
+     *
+     */
+    function checkRetweet(string memory _userid, string memory _tweet)
+        public
+        view
+        virtual
+        returns (bool);
 
-        /**
-        * Function is called when a Chainlink request is fufilled
-        * 
-        * @param _requestId - The id of the Chainlink request that is completed
-        * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
-        *
-        */
-        function fufillChainlinkRequest(bytes32 _requestId, bool _status) 
-        public 
-        virtual;
-
-        /**
-        * Function determines if a user has rewteeted a tweet or not
-        * 
-        * @param _userid - The id of the Chainlink request that is completed
-        * @param _tweet - The status that resolves to whether or not the user has retweeted a particular tweet
-        *
-        */
-        function checkRetweet(string memory _userid, string memory _tweet)
-         public 
-         view
-         virtual
-         returns(bool);
-
-         /**
-        * Function determines if a Chainlink request has been fufilled or not
-        * 
-        * @param _nonce - The nonce of the bounty
-        *
-        */
-        function checkFufillment(uint256 _nonce)
-         public 
-         view
-         virtual
-         returns(bool);
-
+    /**
+     * Function determines if a Chainlink request has been fufilled or not
+     *
+     * @param _requestId - The requestId of the chainlink job
+     *
+     */
+    function checkFufillment(bytes memory _requestId) public view virtual returns (bool);
 }
 
 enum BountyState {None, Pending, Awarded}
@@ -250,18 +235,14 @@ struct Bounty {
     bool active;
     Trigger trigger;
     string tweet;
-    uint256 pendingNonce;
+    uint256 pendingIndex;
     mapping(address => BountyState) status;
     address[] holders;
 }
 
-struct Pending {
+struct Request {
     address user;
     uint256 bounty;
-}
-
-struct Request {
-    string user;
-    string tweet;
-    bool fufilled;
+    uint256 pendingIndex;
+    bool fulfilled;
 }

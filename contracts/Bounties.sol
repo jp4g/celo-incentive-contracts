@@ -14,6 +14,12 @@ contract Bounties is IBounties {
 
     /// MUTABLE FUNCTIONS ///
 
+    function setConsumer(address _at) public override {
+        require(consumerContract == address(0));
+        consumerContract = _at;
+        consumerInstance = ITwitterConsumer(_at);
+    }
+
     function addBounty(
         string memory _title,
         string memory _description,
@@ -48,53 +54,50 @@ contract Bounties is IBounties {
     {
         Bounty storage bounty = bounties[_nonce];
         uint256 trigger = uint256(bounty.trigger);
-        pendingNonces[trigger] = pendingNonces[trigger].add(1);
-        Pending storage pending = pendings[trigger][pendingNonces[trigger]];
-        pending.user = msg.sender;
-        pending.bounty = _nonce;
+        requestNonce = requestNonce.add(1);
+        pendingIndices[trigger] = pendingIndices[trigger].add(1);
+        Request storage request = requests[trigger][requestNonce];
+        request.user = msg.sender;
+        request.bounty = _nonce;
+        request.pendingIndex = pendingIndices[trigger];
         bounty.status[msg.sender] = BountyState.Pending;
-        if(bounty.trigger == Trigger.Twitter) {
-        string memory userid = userContract.getTwitterId(msg.sender);
-        Request memory chainlinkRequest = Request(userid, bounty.tweet, false);
-        bytes32 requestId = consumerInstance.checkRetweets(chainlinkRequest.user, chainlinkRequest.tweet);
-        chainlinkRequests[requestId] = chainlinkRequest;
-        requestIdToNonce[requestId] = _nonce;
-        nonceToRequestId[_nonce] = requestId;
+        if (bounty.trigger == Trigger.Twitter) {
+            string memory userId = userContract.getTwitterId(request.user);
+            string memory tweetId = bounty.tweet;
+            bytes32 requestId = consumerInstance.checkRetweets(userId, tweetId);
+            chainlinkRequests[requestId] = requestNonce;
         }
         emit BountyApplication(_nonce, msg.sender);
     }
 
-    function approveBountyRequest(uint256 _trigger, uint256 _nonce)
+    function approveBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
-
     {
-        Pending memory pending = pendings[_trigger][_nonce];
-        Bounty storage bounty = bounties[pending.bounty];
-        //LOGIC FOR CHAINLINK HERE
-        //@dev make sure manual only approves manual and link only approves link
+        Pending memory request = pendingRequests[_trigger][_index];
+        Bounty storage bounty = bounties[request.bounty];
         if (!bounty.infinite) {
             bounty.quantity = bounty.quantity.sub(1);
             if (bounty.quantity == 0) delistBounty(pending.bounty);
         }
-        bounty.status[pending.user] = BountyState.Awarded;
-        bounty.holders.push(pending.user);
-        userContract.addBounty(pending.user, pending.bounty, bounty.award);
-        emit BountyAwarded(pending.bounty, pending.user, bounty.award);
-        removePendingRequest(_trigger, _nonce);
+        bounty.status[request.user] = BountyState.Awarded;
+        bounty.holders.push(request.user);
+        userContract.addBounty(request.user, request.bounty, bounty.award);
+        emit BountyAwarded(request.bounty, request.user, request.award);
+        removePendingRequest(_trigger, _index);
     }
 
-    function rejectBountyRequest(uint256 _trigger, uint256 _nonce)
+    function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
         onlyAdmin()
     {
-        Pending memory pending = pendings[_trigger][_nonce];
-        Bounty storage bounty = bounties[pending.bounty];
-        bounty.status[pending.user] = BountyState.None;
-        tempban[pending.bounty][pending.user] = now;
-        emit BountyRejected(pending.bounty, pending.user);
-        removePendingRequest(_trigger, _nonce);
+        Request memory request = pendings[_trigger][_index];
+        Bounty storage bounty = bounties[request.bounty];
+        bounty.status[request.user] = BountyState.None;
+        tempban[request.bounty][request.user] = now;
+        emit BountyRejected(request.bounty, request.user);
+        removePendingRequest(_trigger, _index);
     }
 
     function delistBounty(uint256 _nonce) public override onlyAdmin() {
@@ -108,12 +111,13 @@ contract Bounties is IBounties {
      *
      * @param _trigger - the type of request being removed
      * @dev can add more uint/ enum codes for triggers. 1 = manual, 2 = retweet verification
-     * @param _nonce - the index of the pending request to remove
+     * @param _index - the index of the pending request to remove
      */
-    function removePendingRequest(uint256 _trigger, uint256 _nonce) internal {
-        Pending storage last = pendings[_trigger][pendingNonces[_trigger]];
-        if (_nonce != pendingNonces[_trigger]) {
-            Pending storage swap = pendings[_trigger][_nonce];
+    function removePendingRequest(uint256 _trigger, uint256 _index) internal {
+        uint numPending = pendingIndices[_trigger];
+        Request storage last = pendingRequests[_trigger][numPending];
+        if (_index != numPending) {
+            Request storage swap = requests[_trigger][_index];
             swap.user = last.user;
             swap.bounty = last.bounty;
         }
@@ -122,12 +126,27 @@ contract Bounties is IBounties {
         pendingNonces[_trigger] = pendingNonces[_trigger].sub(1);
     }
 
+    function fufillChainlinkRequest(bytes32 _requestId, bool _status)
+        public
+        override
+    {
+        uint256 trigger = Trigger.Twitter;
+        Request storage request = requests[chainlinkRequest[_requestId]];
+        if (_status)
+            approveBountyRequest(trigger, request.pendingIndex);
+        else
+            rejectBountyRequest(trigger, request.pendingIndex);
+        request.fufilled = true;
+        string memory tweet = bounties[request.bounty].tweet;
+        hasRetweeted[tweet][request.user] = _status;
+    }
+
     /// VIEWABLE FUNCTIONS ///
 
     function pendingBountyRequests(uint256 _trigger)
         public
-        override
         view
+        override
         returns (
             uint256 _nonce,
             address[] memory _users,
@@ -145,8 +164,8 @@ contract Bounties is IBounties {
 
     function getBounties()
         public
-        override
         view
+        override
         returns (
             uint256 _bountyNonce,
             string[] memory _titles,
@@ -180,28 +199,21 @@ contract Bounties is IBounties {
         }
     }
 
-    function setConsumer(address _at) public override {
-        require(consumerContract == address(0));
-        consumerContract = _at;
-        consumerInstance = ITwitterConsumer(_at);
-    }
-
-    function fufillChainlinkRequest(bytes32 _requestId, bool _status) public override {
-        if(_status) {
-            approveBountyRequest(uint256(Trigger.Twitter), requestIdToNonce[_requestId]);
-        } else {
-            rejectBountyRequest(uint256(Trigger.Twitter), requestIdToNonce[_requestId]);
-        }
-        chainlinkRequests[_requestId].fufilled = true;
-        hasRetweeted[chainlinkRequests[_requestId].tweet][chainlinkRequests[_requestId].user] = _status;
-    }
-
-    function checkRetweet(string memory _userid, string memory _tweet) public view override returns(bool){
+    function checkRetweet(string memory _userid, string memory _tweet)
+        public
+        view
+        override
+        returns (bool)
+    {
         return hasRetweeted[_tweet][_userid];
     }
 
-    function checkFufillment(uint256 _nonce) public view override returns(bool) {
-        return chainlinkRequests[nonceToRequestId[_nonce]].fufilled;
+    function checkFufillment(bytes memory _requestId)
+        public
+        view
+        override
+        returns (bool)
+    {
+        return chainlinkRequests[_requestId].fufilled;
     }
-
 }
