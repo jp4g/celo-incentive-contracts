@@ -176,6 +176,14 @@ abstract contract IUsers {
             uint256[] memory _balances,
             uint256[] memory _roles
         );
+    
+    function getTwitterId(address _from)
+        public
+        virtual
+        view
+        returns (
+            string memory _twitterid
+        );
 }
 
 enum Role {None, Member, Administrator}

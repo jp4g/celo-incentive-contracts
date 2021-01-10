@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IUsers.sol";
+import "../interfaces/ITwitterConsumer.sol";
 
 abstract contract IBounties {
     /// LIBRARIES ///
@@ -53,13 +54,28 @@ abstract contract IBounties {
     }
 
     /// VARIABLES ///
-
     IUsers userContract;
+    ITwitterConsumer consumerInstance;
+    address public consumerContract;
     uint256 public bountyNonce;
     mapping(uint256 => Bounty) public bounties;
     mapping(uint256 => uint256) pendingNonces;
     mapping(uint256 => mapping(uint256 => Pending)) pendings;
     mapping(uint256 => mapping(address => uint256)) tempban;
+
+    // List of Chainlink requests
+    mapping(bytes32 => Request) chainlinkRequests;
+
+    // List to verify a user has retweeted a tweet or not
+    mapping(string => mapping(string => bool)) hasRetweeted;
+
+    // Map request id to nonce
+    mapping(bytes32 => uint256) requestIdToNonce;
+
+    // Map nonce to request id
+    mapping(uint256 => bytes32) nonceToRequestId;
+
+
 
     /// MUTABLE FUNCTIONS ///
 
@@ -174,6 +190,51 @@ abstract contract IBounties {
             bool[] memory _actives,
             bool[] memory _manuals
         );
+
+        /**
+        * Initialization function to set consumer contract address for permissions
+        * @dev require consumer contract address == address (0)
+        *
+        * @param _at - the address of the consumer contract
+        */
+        function setConsumer(address _at) public virtual;
+
+        /**
+        * Function is called when a Chainlink request is fufilled
+        * 
+        * @param _requestId - The id of the Chainlink request that is completed
+        * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
+        *
+        */
+        function fufillChainlinkRequest(bytes32 _requestId, bool _status) 
+        public 
+        virtual;
+
+        /**
+        * Function determines if a user has rewteeted a tweet or not
+        * 
+        * @param _userid - The id of the Chainlink request that is completed
+        * @param _tweet - The status that resolves to whether or not the user has retweeted a particular tweet
+        *
+        */
+        function checkRetweet(string memory _userid, string memory _tweet)
+         public 
+         view
+         virtual
+         returns(bool);
+
+         /**
+        * Function determines if a Chainlink request has been fufilled or not
+        * 
+        * @param _nonce - The nonce of the bounty
+        *
+        */
+        function checkFufillment(uint256 _nonce)
+         public 
+         view
+         virtual
+         returns(bool);
+
 }
 
 enum BountyState {None, Pending, Awarded}
@@ -197,4 +258,10 @@ struct Bounty {
 struct Pending {
     address user;
     uint256 bounty;
+}
+
+struct Request {
+    string user;
+    string tweet;
+    bool fufilled;
 }

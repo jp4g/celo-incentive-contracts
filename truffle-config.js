@@ -16,6 +16,10 @@ module.exports = {
     kovan: {
       provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'https://kovan.' + process.env.INFURA) },
       network_id: "42",
+    },
+    rinkeby: {
+      provider: () => { return new HDWalletProvider(process.env.MNEMONIC, 'https://rinkeby.' + process.env.INFURA) },
+      network_id: "4",
     }
      
   },

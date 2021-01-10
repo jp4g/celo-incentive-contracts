@@ -19,7 +19,7 @@ contract Users is IUsers {
             _twitterId,
             _imageUrl
         );
-        users[1].role = Role.Administrator;
+        users[userNonce].role = Role.Administrator;
     }
 
     /// MUTABLE FUNCTIONS ///
@@ -150,5 +150,14 @@ contract Users is IUsers {
             _balances[i] = users[i.add(1)].balance;
             _roles[i] = uint256(users[i.add(1)].role);
         }
+    }
+
+    function getTwitterId(address _from)
+        public
+        override
+        view
+        returns (string memory) 
+    {
+        return users[userID[_from]].twitterId;
     }
 }

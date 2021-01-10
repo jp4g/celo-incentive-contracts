@@ -3,6 +3,7 @@ pragma solidity >=0.6.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./interfaces/IBounties.sol";
+import "./interfaces/ITwitterConsumer.sol";
 
 contract Bounties is IBounties {
     //@param _users - the address of the deployed users contract
@@ -48,11 +49,18 @@ contract Bounties is IBounties {
         Bounty storage bounty = bounties[_nonce];
         uint256 trigger = uint256(bounty.trigger);
         pendingNonces[trigger] = pendingNonces[trigger].add(1);
-
         Pending storage pending = pendings[trigger][pendingNonces[trigger]];
         pending.user = msg.sender;
         pending.bounty = _nonce;
         bounty.status[msg.sender] = BountyState.Pending;
+        if(bounty.trigger == Trigger.Twitter) {
+        string memory userid = userContract.getTwitterId(msg.sender);
+        Request memory chainlinkRequest = Request(userid, bounty.tweet, false);
+        bytes32 requestId = consumerInstance.checkRetweets(chainlinkRequest.user, chainlinkRequest.tweet);
+        chainlinkRequests[requestId] = chainlinkRequest;
+        requestIdToNonce[requestId] = _nonce;
+        nonceToRequestId[_nonce] = requestId;
+        }
         emit BountyApplication(_nonce, msg.sender);
     }
 
@@ -171,4 +179,29 @@ contract Bounties is IBounties {
             _manuals[i] = bounties[i.add(1)].trigger == Trigger.Manual;
         }
     }
+
+    function setConsumer(address _at) public override {
+        require(consumerContract == address(0));
+        consumerContract = _at;
+        consumerInstance = ITwitterConsumer(_at);
+    }
+
+    function fufillChainlinkRequest(bytes32 _requestId, bool _status) public override {
+        if(_status) {
+            approveBountyRequest(uint256(Trigger.Twitter), requestIdToNonce[_requestId]);
+        } else {
+            rejectBountyRequest(uint256(Trigger.Twitter), requestIdToNonce[_requestId]);
+        }
+        chainlinkRequests[_requestId].fufilled = true;
+        hasRetweeted[chainlinkRequests[_requestId].tweet][chainlinkRequests[_requestId].user] = _status;
+    }
+
+    function checkRetweet(string memory _userid, string memory _tweet) public view override returns(bool){
+        return hasRetweeted[_tweet][_userid];
+    }
+
+    function checkFufillment(uint256 _nonce) public view override returns(bool) {
+        return chainlinkRequests[nonceToRequestId[_nonce]].fufilled;
+    }
+
 }
