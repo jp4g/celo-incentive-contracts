@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/jp4g/incentive-contracts#readme",
   "dependencies": {
+    "@chainlink/contracts": "0.0.11",
     "@koa/router": "^8.0.6",
     "@opengsn/gsn": "^2.0.3",
     "@openzeppelin/contracts": "^3.3.0",
@@ -43,5 +44,8 @@
   "resolutions": {
     "eth-lib/keccakjs/sha3": "^1.2.3",
     "web3/web3-eth/web3-eth-accounts/scrypt.js": "^0.3.0"
+  },
+  "devDependencies": {
+    "husky": "^4.3.7"
   }
 }

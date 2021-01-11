@@ -129,7 +129,18 @@ abstract contract IUsers {
         virtual
         view
         returns (uint256 _balance);
-
+    
+    /**
+     * Get the name of a given user
+     *
+     * @param _user - the address being queried for name
+     * @return _name - the name text of the user
+     */
+    function name(address _user)
+        public
+        virtual
+        view
+        returns (string memory _name);
     /**
      * Return all user data for a given address if enrolled
      *
@@ -175,6 +186,14 @@ abstract contract IUsers {
             string[] memory _imageUrls,
             uint256[] memory _balances,
             uint256[] memory _roles
+        );
+    
+    function getTwitterId(address _from)
+        public
+        virtual
+        view
+        returns (
+            string memory _twitterid
         );
 }
 

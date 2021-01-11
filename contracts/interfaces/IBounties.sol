@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IUsers.sol";
+import "../interfaces/ITwitterConsumer.sol";
 
 abstract contract IBounties {
     /// LIBRARIES ///
@@ -13,7 +14,7 @@ abstract contract IBounties {
     /// EVENTS ///
 
     event BountyAdded(uint256 _nonce);
-    event BountyApplication(uint256 _nonce, address _by);
+    event BountyApplication(uint256 _nonce, address _by, uint256 _requestNonce);
     event BountyAwarded(uint256 _nonce, address _to, uint256 _minted);
     event BountyRejected(uint256 _nonce, address _to);
     event BountyDelisted(uint256 _nonce);
@@ -44,8 +45,9 @@ abstract contract IBounties {
         _;
     }
 
-    modifier onlyAdmin() {
+    modifier adminOrTwitter(uint _trigger) {
         require(
+            _trigger == uint(Trigger.Twitter) ||
             userContract.role(msg.sender) == 2,
             "Address not authenticated for this action"
         );
@@ -53,15 +55,29 @@ abstract contract IBounties {
     }
 
     /// VARIABLES ///
-
     IUsers userContract;
+    ITwitterConsumer consumerInstance;
+    address public consumerContract;
     uint256 public bountyNonce;
-    mapping(uint256 => Bounty) public bounties;
-    mapping(uint256 => uint256) pendingNonces;
-    mapping(uint256 => mapping(uint256 => Pending)) pendings;
-    mapping(uint256 => mapping(address => uint256)) tempban;
+    uint256 public requestNonce;
+    mapping(uint256 => Bounty) public bounties; //bounty nonce to bounty struct
+    mapping(uint256 => Request) public requests; //request nonce to request struct
+    mapping(uint256 => uint256) pendingIndices; //trigger enum to pending requests for that trigger
+    mapping(uint256 => mapping(uint256 => uint256)) pendingRequests; //trigger to pending index to request nonce
+    mapping(uint256 => mapping(address => uint256)) tempban; //bounty nonce to user to timecode of ban
+    mapping(bytes32 => uint256) chainlinkRequests; //chainlink request to request nonce
+    mapping(uint256  => mapping(address => bool)) userHasBounty; // bounty nonce to user address to bool
+    mapping(uint256 => bytes32) nonceToRequestId;
 
     /// MUTABLE FUNCTIONS ///
+
+    /**
+     * Initialization function to set consumer contract address for permissions
+     * @dev require consumer contract address == address (0)
+     *
+     * @param _at - the address of the consumer contract
+     */
+    function setConsumer(address _at) public virtual;
 
     /**
      * Add a new bounty to the chain
@@ -100,9 +116,9 @@ abstract contract IBounties {
      * @dev modifier onlyAdmin
      *
      * @param _trigger - uint code of the bounty trigger type
-     * @param _nonce - index of the bounty request
+     * @param _index - index of the bounty request
      */
-    function approveBountyRequest(uint256 _trigger, uint256 _nonce)
+    function approveBountyRequest(uint256 _trigger, uint256 _index)
         public
         virtual;
 
@@ -111,9 +127,9 @@ abstract contract IBounties {
      * @dev modifier onlyAdmin
      *
      * @param _trigger - uint code of the bounty trigger type
-     * @param _nonce - index of the bounty request
+     * @param _index - index of the bounty request
      */
-    function rejectBountyRequest(uint256 _trigger, uint256 _nonce)
+    function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         virtual;
 
@@ -125,6 +141,17 @@ abstract contract IBounties {
      */
     function delistBounty(uint256 _nonce) public virtual;
 
+    /**
+     * Function is called when a Chainlink request is fufilled
+     *
+     * @param _requestId - The id of the Chainlink request that is completed
+     * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
+     *
+     */
+    function fulfillChainlinkRequest(bytes32 _requestId, bool _status)
+        public
+        virtual;
+
     /// VIEWABLE FUNCTIONS ///
 
     /**
@@ -133,17 +160,21 @@ abstract contract IBounties {
      * @param _trigger - trigger type to query (1 = manual, 2 = retweet)
      * @return _nonce - the number of pending bounty requests
      * @return _users - array of all users with pending requests for bounties
+     * @return _userNames
      * @return _bounties - array of all bounties being requested by a user
+     * @return _bountyNames 
      * @dev pending request x is found doing _users[x] and _bounties[x]
      */
     function pendingBountyRequests(uint256 _trigger)
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _nonce,
             address[] memory _users,
-            uint256[] memory _bounties
+            string[] memory _userNames,
+            uint256[] memory _bounties,
+            string[] memory _bountyNames
         );
 
     /**
@@ -161,8 +192,8 @@ abstract contract IBounties {
      */
     function getBounties()
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _bountyNonce,
             string[] memory _titles,
@@ -174,6 +205,27 @@ abstract contract IBounties {
             bool[] memory _actives,
             bool[] memory _manuals
         );
+
+    /**
+     * Function determines if a user has been awarded a bounty or not
+     *
+     * @param _bountyNonce - Nonce or number that represents the specified bounty
+     * @param _user - Address of the user that is checked to hold the bounty
+     *
+     */
+    function hasBounty(uint256 _bountyNonce, address _user)
+        public
+        view
+        virtual
+        returns (bool);
+
+    /**
+     * Function determines if a Chainlink request has been fufilled or not
+     *
+     * @param _nonce - The requestId of the chainlink job
+     *
+     */
+    function checkFulfillment(uint _nonce) public view virtual returns (bool);
 }
 
 enum BountyState {None, Pending, Awarded}
@@ -189,12 +241,14 @@ struct Bounty {
     bool active;
     Trigger trigger;
     string tweet;
-    uint256 pendingNonce;
+    uint256 pendingIndex;
     mapping(address => BountyState) status;
     address[] holders;
 }
 
-struct Pending {
+struct Request {
     address user;
     uint256 bounty;
+    uint256 pendingIndex;
+    bool fulfilled;
 }
