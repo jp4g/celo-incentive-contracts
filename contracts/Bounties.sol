@@ -29,7 +29,7 @@ contract Bounties is IBounties {
         uint256 _quantity,
         bool _manual,
         string memory _tweetId
-    ) public override onlyAdmin() returns (uint256 _nonce) {
+    ) public override adminOrTwitter(uint(Trigger.Manual)) returns (uint256 _nonce) {
         bountyNonce = bountyNonce.add(1);
         _nonce = bountyNonce;
         Bounty storage bounty = bounties[_nonce];
@@ -67,8 +67,9 @@ contract Bounties is IBounties {
             string memory tweetId = bounty.tweet;
             bytes32 requestId = consumerInstance.checkRetweets(userId, tweetId);
             chainlinkRequests[requestId] = requestNonce;
+            nonceToRequestId[requestNonce] = requestId;
         }
-        emit BountyApplication(_nonce, msg.sender);
+        emit BountyApplication(_nonce, msg.sender, requestNonce);
     }
 
     function approveBountyRequest(uint256 _trigger, uint256 _index)
@@ -85,6 +86,7 @@ contract Bounties is IBounties {
         bounty.status[request.user] = BountyState.Awarded;
         bounty.holders.push(request.user);
         userContract.addBounty(request.user, request.bounty, bounty.award);
+        userHasBounty[request.bounty][request.user] = true;
         emit BountyAwarded(request.bounty, request.user, bounty.award);
         removePendingRequest(_trigger, _index);
     }
@@ -92,18 +94,19 @@ contract Bounties is IBounties {
     function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
-        onlyAdmin()
+        adminOrTwitter(uint(Trigger.Twitter))
     {
-        requestNonce = pendingRequests[_trigger][_index];
+        uint requestNonce = pendingRequests[_trigger][_index];
         Request memory request = requests[requestNonce];
         Bounty storage bounty = bounties[request.bounty];
         bounty.status[request.user] = BountyState.None;
         tempban[request.bounty][request.user] = now;
+        userHasBounty[request.bounty][request.user] = false;
         emit BountyRejected(request.bounty, request.user);
         removePendingRequest(_trigger, _index);
     }
 
-    function delistBounty(uint256 _nonce) public override onlyAdmin() {
+    function delistBounty(uint256 _nonce) public override adminOrTwitter(uint(Trigger.Manual)) {
         Bounty storage bounty = bounties[_nonce];
         bounty.active = false;
         emit BountyDelisted(_nonce);
@@ -130,20 +133,17 @@ contract Bounties is IBounties {
         pendingIndices[_trigger] = pendingIndices[_trigger].sub(1);
     }
 
-    function fufillChainlinkRequest(bytes32 _requestId, bool _status)
+    function fulfillChainlinkRequest(bytes32 _requestId, bool _status)
         public
         override
     {
-        uint256 trigger = uint(Trigger.Twitter);
+        uint256 trigger = uint256(Trigger.Twitter);
         Request storage request = requests[chainlinkRequests[_requestId]];
-        if (_status)
+        if (_status) 
             approveBountyRequest(trigger, request.pendingIndex);
-        else
+        else 
             rejectBountyRequest(trigger, request.pendingIndex);
         request.fulfilled = true;
-        string memory tweet = bounties[request.bounty].tweet;
-        string memory username = userContract.getTwitterId(request.user);
-        hasRetweeted[tweet][username] = _status;
     }
 
     /// VIEWABLE FUNCTIONS ///
@@ -205,21 +205,21 @@ contract Bounties is IBounties {
         }
     }
 
-    function checkRetweet(string memory _userid, string memory _tweet)
+    function hasBounty(uint256 _bountyNonce, address _user)
         public
         view
         override
         returns (bool)
     {
-        return hasRetweeted[_tweet][_userid];
+        return userHasBounty[_bountyNonce][_user];
     }
 
-    function checkFufillment(bytes32 _requestId)
+    function checkFulfillment(uint256 _nonce)
         public
         view
         override
         returns (bool)
     {
-        return requests[chainlinkRequests[_requestId]].fulfilled;
+        return requests[_nonce].fulfilled;
     }
 }

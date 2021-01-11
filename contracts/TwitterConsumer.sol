@@ -64,7 +64,7 @@ contract TwitterConsumer is ITwitterConsumer {
      */ 
     function fulfill(bytes32 _requestId, bool _status) public override recordChainlinkFulfillment(_requestId)
     {
-        bountyContract.fufillChainlinkRequest(_requestId, _status);
+        bountyContract.fulfillChainlinkRequest(_requestId, _status);
     }
 
 }

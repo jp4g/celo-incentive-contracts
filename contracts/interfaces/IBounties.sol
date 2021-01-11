@@ -14,11 +14,10 @@ abstract contract IBounties {
     /// EVENTS ///
 
     event BountyAdded(uint256 _nonce);
-    event BountyApplication(uint256 _nonce, address _by);
+    event BountyApplication(uint256 _nonce, address _by, uint256 _requestNonce);
     event BountyAwarded(uint256 _nonce, address _to, uint256 _minted);
     event BountyRejected(uint256 _nonce, address _to);
     event BountyDelisted(uint256 _nonce);
-    event FLAG(bool _infinite);
 
     /// MODIFIERS ///
 
@@ -46,8 +45,9 @@ abstract contract IBounties {
         _;
     }
 
-    modifier onlyAdmin() {
+    modifier adminOrTwitter(uint _trigger) {
         require(
+            _trigger == uint(Trigger.Twitter) ||
             userContract.role(msg.sender) == 2,
             "Address not authenticated for this action"
         );
@@ -66,7 +66,8 @@ abstract contract IBounties {
     mapping(uint256 => mapping(uint256 => uint256)) pendingRequests; //trigger to pending index to request nonce
     mapping(uint256 => mapping(address => uint256)) tempban; //bounty nonce to user to timecode of ban
     mapping(bytes32 => uint256) chainlinkRequests; //chainlink request to request nonce
-    mapping(string => mapping(string => bool)) hasRetweeted;
+    mapping(uint256  => mapping(address => bool)) userHasBounty; // bounty nonce to user address to bool
+    mapping(uint256 => bytes32) nonceToRequestId;
 
     /// MUTABLE FUNCTIONS ///
 
@@ -147,7 +148,7 @@ abstract contract IBounties {
      * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
      *
      */
-    function fufillChainlinkRequest(bytes32 _requestId, bool _status)
+    function fulfillChainlinkRequest(bytes32 _requestId, bool _status)
         public
         virtual;
 
@@ -202,13 +203,13 @@ abstract contract IBounties {
         );
 
     /**
-     * Function determines if a user has rewteeted a tweet or not
+     * Function determines if a user has been awarded a bounty or not
      *
-     * @param _userid - The id of the Chainlink request that is completed
-     * @param _tweet - The status that resolves to whether or not the user has retweeted a particular tweet
+     * @param _bountyNonce - Nonce or number that represents the specified bounty
+     * @param _user - Address of the user that is checked to hold the bounty
      *
      */
-    function checkRetweet(string memory _userid, string memory _tweet)
+    function hasBounty(uint256 _bountyNonce, address _user)
         public
         view
         virtual
@@ -217,10 +218,10 @@ abstract contract IBounties {
     /**
      * Function determines if a Chainlink request has been fufilled or not
      *
-     * @param _requestId - The requestId of the chainlink job
+     * @param _nonce - The requestId of the chainlink job
      *
      */
-    function checkFufillment(bytes32 _requestId) public view virtual returns (bool);
+    function checkFulfillment(uint _nonce) public view virtual returns (bool);
 }
 
 enum BountyState {None, Pending, Awarded}
