@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "./interfaces/IUsers.sol";
 
 contract Users is IUsers {
-
     // @param _name - the name of the admin
     // @param _twitterId - the twitter id of the admin
     // @param _imageUrl - the google profile photo of the admin
@@ -14,11 +13,7 @@ contract Users is IUsers {
         string memory _twitterId,
         string memory _imageUrl
     ) public {
-        enroll(
-            _name,
-            _twitterId,
-            _imageUrl
-        );
+        enroll(_name, _twitterId, _imageUrl);
         users[userNonce].role = Role.Administrator;
     }
 
@@ -90,23 +85,32 @@ contract Users is IUsers {
 
     /// VIEWABLE FUNCTIONS ///
 
-    function role(address _user) public override view returns (uint256 _role) {
+    function role(address _user) public view override returns (uint256 _role) {
         _role = uint256(users[userID[_user]].role);
     }
 
     function balanceOf(address _user)
         public
-        override
         view
+        override
         returns (uint256 _balance)
     {
         _balance = users[userID[_user]].balance;
     }
 
+    function name(address _user)
+        public
+        view
+        override
+        returns (string memory _name)
+    {
+        _name = users[userID[_user]].name;
+    }
+
     function getUser(address _user)
         public
-        override
         view
+        override
         returns (
             string memory _name,
             string memory _imageUrl,
@@ -129,8 +133,8 @@ contract Users is IUsers {
 
     function getUsers()
         public
-        override
         view
+        override
         returns (
             uint256 _nonce,
             string[] memory _names,
@@ -154,9 +158,9 @@ contract Users is IUsers {
 
     function getTwitterId(address _from)
         public
-        override
         view
-        returns (string memory) 
+        override
+        returns (string memory)
     {
         return users[userID[_from]].twitterId;
     }

@@ -155,16 +155,22 @@ contract Bounties is IBounties {
         returns (
             uint256 _nonce,
             address[] memory _users,
-            uint256[] memory _bounties
+            string[] memory _userNames,
+            uint256[] memory _bounties,
+            string[] memory _bountyNames
         )
     {
         _nonce = pendingIndices[_trigger];
         _users = new address[](_nonce);
+        _userNames = new string[](_nonce);
         _bounties = new uint256[](_nonce);
+        _bountyNames = new string[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
             uint requestNonce = pendingRequests[_trigger][i.add(1)];
             _users[i] = requests[requestNonce].user;
+            _userNames[i] = userContract.name(_users[i]);
             _bounties[i] = requests[requestNonce].bounty;
+            _bountyNames[i] = bounties[_bounties[i]].name;
         }
     }
 
