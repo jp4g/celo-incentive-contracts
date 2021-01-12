@@ -154,7 +154,7 @@ abstract contract IBounties {
 
     /// VIEWABLE FUNCTIONS ///
 
-    /**
+   /**
      * Return all pending bounty approval requests
      *
      * @param _trigger - trigger type to query (1 = manual, 2 = retweet)
@@ -162,7 +162,10 @@ abstract contract IBounties {
      * @return _users - array of all users with pending requests for bounties
      * @return _userNames
      * @return _bounties - array of all bounties being requested by a user
-     * @return _bountyNames 
+     * @return _bountyNames
+     * @return _bountyAwards 
+     * @return _bountyQuantities 
+     * @return _bountyInfinite 
      * @dev pending request x is found doing _users[x] and _bounties[x]
      */
     function pendingBountyRequests(uint256 _trigger)
@@ -174,8 +177,12 @@ abstract contract IBounties {
             address[] memory _users,
             string[] memory _userNames,
             uint256[] memory _bounties,
-            string[] memory _bountyNames
+            string[] memory _bountyNames,
+            uint256[] memory _bountyAwards,
+            uint256[] memory _bountyQuantities,
+            bool[] memory _bountyInfinite
         );
+
 
     /**
      * Get summary data on all bounties

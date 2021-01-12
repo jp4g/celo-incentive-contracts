@@ -157,7 +157,10 @@ contract Bounties is IBounties {
             address[] memory _users,
             string[] memory _userNames,
             uint256[] memory _bounties,
-            string[] memory _bountyNames
+            string[] memory _bountyNames,
+            uint256[] memory _bountyAwards,
+            uint256[] memory _bountyQuantities,
+            bool[] memory _bountyInfinite
         )
     {
         _nonce = pendingIndices[_trigger];
@@ -165,12 +168,19 @@ contract Bounties is IBounties {
         _userNames = new string[](_nonce);
         _bounties = new uint256[](_nonce);
         _bountyNames = new string[](_nonce);
+        _bountyAwards = new uint256[](_nonce);
+        _bountyQuantities = new uint256[](_nonce);
+        _bountyInfinite = new bool[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
             uint requestNonce = pendingRequests[_trigger][i.add(1)];
             _users[i] = requests[requestNonce].user;
             _userNames[i] = userContract.name(_users[i]);
             _bounties[i] = requests[requestNonce].bounty;
             _bountyNames[i] = bounties[_bounties[i]].name;
+            _bountyAwards[i] = bounties[_bounties[i]].award;
+            _bountyQuantities[i] = bounties[_bounties[i]].quantity;
+            _bountyInfinite[i] = bounties[_bounties[i]].infinite;
+            
         }
     }
 
