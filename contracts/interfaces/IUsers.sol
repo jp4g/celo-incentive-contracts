@@ -3,8 +3,10 @@ pragma solidity >=0.6.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-abstract contract IUsers {
+
+abstract contract IUsers is BaseRelayRecipient {
     using SafeMath for uint256;
 
     /// EVENTS ///
@@ -17,18 +19,18 @@ abstract contract IUsers {
 
     modifier onlyAdmin() {
         require(
-            users[userID[msg.sender]].role == Role.Administrator,
+            users[userID[_msgSender()]].role == Role.Administrator,
             "Caller is not an administrator"
         );
         _;
     }
 
-    /// VARIABLES ///
     address public itemContract;
     address public bountyContract;
     uint256 public userNonce;
     mapping(address => uint256) public userID;
     mapping(uint256 => User) public users;
+    string public override versionRecipient = "2.0.0";
 
     /// MUTABLE FUNCTIONS ///
     /**
@@ -195,6 +197,13 @@ abstract contract IUsers {
         returns (
             string memory _twitterid
         );
+    
+    /**
+     * GSN Forwarder Call
+     */
+    function getTrustedForwarder() external view returns(address) {
+        return trustedForwarder;
+    }
 }
 
 enum Role {None, Member, Administrator}

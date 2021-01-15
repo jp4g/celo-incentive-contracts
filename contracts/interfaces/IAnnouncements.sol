@@ -4,9 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IUsers.sol";
+import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-abstract contract IAnnouncements {
-
+abstract contract IAnnouncements is BaseRelayRecipient {
     /// LIBRARIES ///
     using SafeMath for uint256;
 
@@ -18,18 +18,17 @@ abstract contract IAnnouncements {
 
     modifier onlyAdmin() {
         require(
-            userContract.role(msg.sender) == 2,
+            userContract.role(_msgSender()) == 2,
             "Address not authenticated for this action"
         );
         _;
     }
 
-    /// VARIABLES ///
-
     IUsers userContract;
     uint256 public announcementNonce;
     uint256 public pinnedAnnouncement;
     mapping(uint256 => Announcement) public announcements;
+    string public override versionRecipient = "2.0.0";
 
     /**
      * Add a new announcement
@@ -65,8 +64,8 @@ abstract contract IAnnouncements {
      */
     function getAnnouncements()
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _nonce,
             string[] memory _titles,
@@ -74,6 +73,13 @@ abstract contract IAnnouncements {
             uint256[] memory _timecodes,
             uint256 _pinned
         );
+
+    /**
+     * GSN Forwarder Call
+     */
+    function getTrustedForwarder() external view returns (address) {
+        return trustedForwarder;
+    }
 }
 
 struct Announcement {

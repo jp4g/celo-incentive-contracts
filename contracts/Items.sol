@@ -6,9 +6,11 @@ import "./interfaces/IItems.sol";
 
 contract Items is IItems {
     //@param _users - the address of the deployed users contract
-    constructor(address _users) public {
+    //@param _forwarder - the address of the gsn trusted forwarder
+    constructor(address _users, address _forwarder) public {
         userContract = IUsers(_users);
         userContract.setItem(address(this));
+        trustedForwarder = _forwarder;
     }
 
     /// MUTABLE FUNCTIONS ///
@@ -48,11 +50,11 @@ contract Items is IItems {
                 emit ItemDelisted(_nonce);
             }
         }
-        item.owners.push(msg.sender);
-        item.purchased[msg.sender] = true;
-        userContract.addItem(msg.sender, _nonce, item.cost);
-        emit ItemPurchased(_nonce, msg.sender, item.cost);
-        return userContract.balanceOf(msg.sender);
+        item.owners.push(_msgSender());
+        item.purchased[_msgSender()] = true;
+        userContract.addItem(_msgSender(), _nonce, item.cost);
+        emit ItemPurchased(_nonce, _msgSender(), item.cost);
+        return userContract.balanceOf(_msgSender());
     }
 
     function delistItem(uint256 _nonce) public override onlyAdmin() {
@@ -65,8 +67,8 @@ contract Items is IItems {
 
     function getItems()
         public
-        override
         view
+        override
         returns (
             uint256 _itemNonce,
             string[] memory _titles,
