@@ -5,10 +5,11 @@ pragma experimental ABIEncoderV2;
 import "./interfaces/IAnnouncements.sol";
 
 contract Announcements is IAnnouncements {
-
     //@param _users - the address of the deployed users contract
-    constructor(address _users) public {
+    //@param _forwarder - the address of the gsn trusted forwarder
+    constructor(address _users, address _forwarder) public {
         userContract = IUsers(_users);
+        trustedForwarder = _forwarder;
     }
 
     function pinAnnouncement(uint256 _nonce) public override onlyAdmin() {
@@ -38,8 +39,8 @@ contract Announcements is IAnnouncements {
 
     function getAnnouncements()
         public
-        override
         view
+        override
         returns (
             uint256 _nonce,
             string[] memory _titles,

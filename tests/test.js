@@ -374,7 +374,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             "1321436762816872449",
             { from: admin1 }
         )
-        let bountyNonce = new BN(2)
+        let bountyNonce = new BN(1)
         console.log('Bounty Added. Applying for Bounty...')
         const { receipt } = await bounties.applyForBounty(bountyNonce, { from: validTwitterMember1 })
         let reqNonce = receipt.logs[0].args._requestNonce
@@ -392,7 +392,7 @@ contract('OrgToken Unit Testing', (accounts) => {
         })
         it('If a user has not fufilled the bounty the chainlink adapter should return false', async () => {
         await users.enroll("twitter2", "123456", "URL-twitter2", { from: validTwitterMember2 })
-            let bountyNonce = new BN(2)
+            let bountyNonce = new BN(1)
             console.log('Applying for Bounty...')
             const { receipt } = await bounties.applyForBounty(bountyNonce, { from: validTwitterMember2 })
             let reqNonce = receipt.logs[0].args._requestNonce

@@ -7,9 +7,11 @@ import "./interfaces/ITwitterConsumer.sol";
 
 contract Bounties is IBounties {
     //@param _users - the address of the deployed users contract
-    constructor(address _users) public {
+    //@param _forwarder - the address of the gsn trusted forwarder
+    constructor(address _users, address _forwarder) public {
         userContract = IUsers(_users);
         userContract.setBounty(address(this));
+        trustedForwarder = _forwarder;
     }
 
     /// MUTABLE FUNCTIONS ///
@@ -29,7 +31,12 @@ contract Bounties is IBounties {
         uint256 _quantity,
         bool _manual,
         string memory _tweetId
-    ) public override adminOrTwitter(uint(Trigger.Manual)) returns (uint256 _nonce) {
+    )
+        public
+        override
+        adminOrTwitter(uint256(Trigger.Manual))
+        returns (uint256 _nonce)
+    {
         bountyNonce = bountyNonce.add(1);
         _nonce = bountyNonce;
         Bounty storage bounty = bounties[_nonce];
@@ -58,10 +65,10 @@ contract Bounties is IBounties {
         pendingIndices[trigger] = pendingIndices[trigger].add(1);
         pendingRequests[trigger][pendingIndices[trigger]] = requestNonce;
         Request storage request = requests[requestNonce];
-        request.user = msg.sender;
+        request.user = _msgSender();
         request.bounty = _nonce;
         request.pendingIndex = pendingIndices[trigger];
-        bounty.status[msg.sender] = BountyState.Pending;
+        bounty.status[_msgSender()] = BountyState.Pending;
         if (bounty.trigger == Trigger.Twitter) {
             string memory userId = userContract.getTwitterId(request.user);
             string memory tweetId = bounty.tweet;
@@ -69,14 +76,14 @@ contract Bounties is IBounties {
             chainlinkRequests[requestId] = requestNonce;
             nonceToRequestId[requestNonce] = requestId;
         }
-        emit BountyApplication(_nonce, msg.sender, requestNonce);
+        emit BountyApplication(_nonce, _msgSender(), requestNonce);
     }
 
     function approveBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
     {
-        uint requestNonce = pendingRequests[_trigger][_index];
+        uint256 requestNonce = pendingRequests[_trigger][_index];
         Request memory request = requests[requestNonce];
         Bounty storage bounty = bounties[request.bounty];
         if (!bounty.infinite) {
@@ -94,9 +101,9 @@ contract Bounties is IBounties {
     function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
-        adminOrTwitter(uint(Trigger.Twitter))
+        adminOrTwitter(uint256(Trigger.Twitter))
     {
-        uint requestNonce = pendingRequests[_trigger][_index];
+        uint256 requestNonce = pendingRequests[_trigger][_index];
         Request memory request = requests[requestNonce];
         Bounty storage bounty = bounties[request.bounty];
         bounty.status[request.user] = BountyState.None;
@@ -106,7 +113,11 @@ contract Bounties is IBounties {
         removePendingRequest(_trigger, _index);
     }
 
-    function delistBounty(uint256 _nonce) public override adminOrTwitter(uint(Trigger.Manual)) {
+    function delistBounty(uint256 _nonce)
+        public
+        override
+        adminOrTwitter(uint256(Trigger.Manual))
+    {
         Bounty storage bounty = bounties[_nonce];
         bounty.active = false;
         emit BountyDelisted(_nonce);
@@ -120,11 +131,11 @@ contract Bounties is IBounties {
      * @param _index - the index of the pending request to remove
      */
     function removePendingRequest(uint256 _trigger, uint256 _index) internal {
-        uint pendingIndex = pendingIndices[_trigger];
-        uint lastNonce = pendingRequests[_trigger][pendingIndex];
+        uint256 pendingIndex = pendingIndices[_trigger];
+        uint256 lastNonce = pendingRequests[_trigger][pendingIndex];
         Request storage last = requests[lastNonce];
         if (_index != pendingIndex) {
-            uint swapNonce = pendingRequests[_trigger][_index];
+            uint256 swapNonce = pendingRequests[_trigger][_index];
             Request storage swap = requests[swapNonce];
             swap.user = last.user;
             swap.bounty = last.bounty;
@@ -139,10 +150,8 @@ contract Bounties is IBounties {
     {
         uint256 trigger = uint256(Trigger.Twitter);
         Request storage request = requests[chainlinkRequests[_requestId]];
-        if (_status) 
-            approveBountyRequest(trigger, request.pendingIndex);
-        else 
-            rejectBountyRequest(trigger, request.pendingIndex);
+        if (_status) approveBountyRequest(trigger, request.pendingIndex);
+        else rejectBountyRequest(trigger, request.pendingIndex);
         request.fulfilled = true;
     }
 
@@ -172,7 +181,7 @@ contract Bounties is IBounties {
         _bountyQuantities = new uint256[](_nonce);
         _bountyInfinite = new bool[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
-            uint requestNonce = pendingRequests[_trigger][i.add(1)];
+            uint256 requestNonce = pendingRequests[_trigger][i.add(1)];
             _users[i] = requests[requestNonce].user;
             _userNames[i] = userContract.name(_users[i]);
             _bounties[i] = requests[requestNonce].bounty;
@@ -180,7 +189,6 @@ contract Bounties is IBounties {
             _bountyAwards[i] = bounties[_bounties[i]].award;
             _bountyQuantities[i] = bounties[_bounties[i]].quantity;
             _bountyInfinite[i] = bounties[_bounties[i]].infinite;
-            
         }
     }
 

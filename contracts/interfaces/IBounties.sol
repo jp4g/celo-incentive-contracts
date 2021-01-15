@@ -5,8 +5,9 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IUsers.sol";
 import "../interfaces/ITwitterConsumer.sol";
+import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-abstract contract IBounties {
+abstract contract IBounties is BaseRelayRecipient {
     /// LIBRARIES ///
 
     using SafeMath for uint256;
@@ -31,15 +32,15 @@ abstract contract IBounties {
             "Bounty not available for application"
         );
         require(
-            tempban[_bounty][msg.sender] < now.sub(1 days),
+            tempban[_bounty][_msgSender()] < now.sub(1 days),
             "Tempbanned < 24 hours ago"
         );
         require(
-            bounties[_bounty].status[msg.sender] != BountyState.Awarded,
+            bounties[_bounty].status[_msgSender()] != BountyState.Awarded,
             "User has has bounty"
         );
         require(
-            bounties[_bounty].status[msg.sender] != BountyState.Pending,
+            bounties[_bounty].status[_msgSender()] != BountyState.Pending,
             "User has pending approval"
         );
         _;
@@ -48,13 +49,12 @@ abstract contract IBounties {
     modifier adminOrTwitter(uint _trigger) {
         require(
             _trigger == uint(Trigger.Twitter) ||
-            userContract.role(msg.sender) == 2,
+            userContract.role(_msgSender()) == 2,
             "Address not authenticated for this action"
         );
         _;
     }
 
-    /// VARIABLES ///
     IUsers userContract;
     ITwitterConsumer consumerInstance;
     address public consumerContract;
@@ -68,6 +68,7 @@ abstract contract IBounties {
     mapping(bytes32 => uint256) chainlinkRequests; //chainlink request to request nonce
     mapping(uint256  => mapping(address => bool)) userHasBounty; // bounty nonce to user address to bool
     mapping(uint256 => bytes32) nonceToRequestId;
+    string public override versionRecipient = "2.0.0";
 
     /// MUTABLE FUNCTIONS ///
 
@@ -233,6 +234,13 @@ abstract contract IBounties {
      *
      */
     function checkFulfillment(uint _nonce) public view virtual returns (bool);
+
+    /**
+     * GSN Forwarder Call
+     */
+    function getTrustedForwarder() external view returns(address) {
+        return trustedForwarder;
+    }
 }
 
 enum BountyState {None, Pending, Awarded}
