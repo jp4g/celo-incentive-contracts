@@ -22,6 +22,24 @@ contract Users is IUsers {
 
     /// MUTABLE FUNCTIONS ///
 
+    function enrollAdmin(
+        address _at,
+        string memory _name,
+        string memory _twitterId,
+        string memory _imageUrl
+    ) public override onlyAdmin() returns (uint256 _nonce) {
+        userNonce = userNonce.add(1);
+        userID[_at] = userNonce;
+        User storage user = users[userNonce];
+        user.name = _name;
+        user.twitterId = _twitterId;
+        user.imageUrl = _imageUrl;
+        user.at = _at;
+        user.role = Role.Administrator;
+        emit UserEnrolled(_at);
+        _nonce = userNonce;
+    }
+
     function enroll(
         string memory _name,
         string memory _twitterId,
@@ -125,7 +143,8 @@ contract Users is IUsers {
             uint256 _balance,
             uint256 _role,
             uint256[] memory _items,
-            uint256[] memory _bounties
+            uint256[] memory _bounties,
+            address _at
         )
     {
         User memory user = users[userID[_user]];
@@ -136,6 +155,7 @@ contract Users is IUsers {
         _role = uint256(user.role);
         _items = user.items;
         _bounties = user.bounties;
+        _at = user.at;
     }
 
     function getUsers()
@@ -147,7 +167,8 @@ contract Users is IUsers {
             string[] memory _names,
             string[] memory _imageUrls,
             uint256[] memory _balances,
-            uint256[] memory _roles
+            uint256[] memory _roles,
+            address[] memory _ats
         )
     {
         _nonce = userNonce;
@@ -155,11 +176,13 @@ contract Users is IUsers {
         _imageUrls = new string[](_nonce);
         _balances = new uint256[](_nonce);
         _roles = new uint256[](_nonce);
+        _ats = new address[](_nonce);
         for (uint256 i = 0; i < _nonce; i++) {
             _names[i] = users[i.add(1)].name;
             _imageUrls[i] = users[i.add(1)].imageUrl;
             _balances[i] = users[i.add(1)].balance;
             _roles[i] = uint256(users[i.add(1)].role);
+            _ats[i] = users[i.add(1)].at;
         }
     }
 

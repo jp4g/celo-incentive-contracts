@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-
 abstract contract IUsers is BaseRelayRecipient {
     using SafeMath for uint256;
 
@@ -33,6 +32,25 @@ abstract contract IUsers is BaseRelayRecipient {
     string public override versionRecipient = "2.0.0";
 
     /// MUTABLE FUNCTIONS ///
+
+    /**
+     * Automatically enroll an account as an administrator
+     * @dev modifier onlyAdmin
+     * @dev function exists only to make team development easier
+     *
+     * @param _at - the address being enrolled
+     * @param _name - the name of the user being enrolled as an administrator
+     * @param _twitterId - the twitterId of the user being enrolled as an administrator
+     * @param _imageUrl - the google profile image url of t he user being enrolled as administrator
+     * @return _nonce - the index of the new user added
+     */
+    function enrollAdmin(
+        address _at,
+        string memory _name,
+        string memory _twitterId,
+        string memory _imageUrl
+    ) public virtual returns (uint256 _nonce);
+
     /**
      * Enroll yourself within the OrgToken
      * @dev should only be called if unenrolled!
@@ -118,7 +136,7 @@ abstract contract IUsers is BaseRelayRecipient {
      * @return _role - uint code for their role
      *        0 = none; 1 = member, 2 = administrator
      */
-    function role(address _user) public virtual view returns (uint256 _role);
+    function role(address _user) public view virtual returns (uint256 _role);
 
     /**
      * Get the balance of a given user
@@ -128,10 +146,10 @@ abstract contract IUsers is BaseRelayRecipient {
      */
     function balanceOf(address _user)
         public
-        virtual
         view
+        virtual
         returns (uint256 _balance);
-    
+
     /**
      * Get the name of a given user
      *
@@ -140,9 +158,10 @@ abstract contract IUsers is BaseRelayRecipient {
      */
     function name(address _user)
         public
-        virtual
         view
+        virtual
         returns (string memory _name);
+
     /**
      * Return all user data for a given address if enrolled
      *
@@ -154,11 +173,12 @@ abstract contract IUsers is BaseRelayRecipient {
      * @return _role - user's on-chain permissions
      * @return _items - array of nonces of all items purchased by the user
      * @return _bounties - array of all bounties earned by the user
+     * @return _at - address of the user
      */
     function getUser(address _user)
         public
-        virtual
         view
+        virtual
         returns (
             string memory _name,
             string memory _imageUrl,
@@ -166,7 +186,8 @@ abstract contract IUsers is BaseRelayRecipient {
             uint256 _balance,
             uint256 _role,
             uint256[] memory _items,
-            uint256[] memory _bounties
+            uint256[] memory _bounties,
+            address _at
         );
 
     /**
@@ -177,31 +198,31 @@ abstract contract IUsers is BaseRelayRecipient {
      * @return _imageUrls - array of all users' google profile image urls
      * @return _balances - array of all users' org token balances
      * @return _roles - array of all users' on-chain permissions
+     * @return _ats - array of users' addresses
      */
     function getUsers()
         public
-        virtual
         view
+        virtual
         returns (
             uint256 _nonce,
             string[] memory _names,
             string[] memory _imageUrls,
             uint256[] memory _balances,
-            uint256[] memory _roles
+            uint256[] memory _roles,
+            address[] memory _ats
         );
-    
+
     function getTwitterId(address _from)
         public
-        virtual
         view
-        returns (
-            string memory _twitterid
-        );
-    
+        virtual
+        returns (string memory _twitterid);
+
     /**
      * GSN Forwarder Call
      */
-    function getTrustedForwarder() external view returns(address) {
+    function getTrustedForwarder() external view returns (address) {
         return trustedForwarder;
     }
 }

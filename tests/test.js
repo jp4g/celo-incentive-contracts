@@ -37,186 +37,186 @@ contract('OrgToken Unit Testing', (accounts) => {
         consumer = await ConsumerContract.deployed()
     })
 
-    // describe("User Functionality", async () => {
-    //     it('User can self enroll', async () => {
-    //         let { logs } = await users.enroll("admin 2", "twitterID-admin2", "URL-admin2", { from: admin2 })
-    //         expectEvent.inLogs(logs, 'UserEnrolled', { _user: admin2 })
-    //     })
+    describe("User Functionality", async () => {
+        it('User can self enroll', async () => {
+            let { logs } = await users.enroll("admin 2", "twitterID-admin2", "URL-admin2", { from: admin2 })
+            expectEvent.inLogs(logs, 'UserEnrolled', { _user: admin2 })
+        })
 
-    //     it('User cannot re-enroll self', async () => {
-    //         await expectRevert(
-    //             users.enroll("admin 2", "twitterID-admin2", "URL-admin2", { from: admin2 }),
-    //             "User is enrolled"
-    //         )
-    //     })
+        it('User cannot re-enroll self', async () => {
+            await expectRevert(
+                users.enroll("admin 2", "twitterID-admin2", "URL-admin2", { from: admin2 }),
+                "User is enrolled"
+            )
+        })
 
-    //     it('Admin can promote a user to admin', async () => {
-    //         await expectRevert(
-    //             users.promote(admin2, { from: admin2 }),
-    //             "Caller is not an administrator"
-    //         )
-    //         let { logs } = await users.promote(admin2, { from: admin1 })
-    //         expectEvent.inLogs(logs, 'UserPromoted', { _user: admin2 })
-    //     })
+        it('Admin can promote a user to admin', async () => {
+            await expectRevert(
+                users.promote(admin2, { from: admin2 }),
+                "Caller is not an administrator"
+            )
+            let { logs } = await users.promote(admin2, { from: admin1 })
+            expectEvent.inLogs(logs, 'UserPromoted', { _user: admin2 })
+        })
 
-    //     it('User can change their twitterID', async () => {
-    //         let { logs } = await users.setTwitterId('changed-id', { from: admin2 })
-    //         expectEvent.inLogs(logs, 'TwitterIDUpdated', { _user: admin2 })
-    //     })
+        it('User can change their twitterID', async () => {
+            let { logs } = await users.setTwitterId('changed-id', { from: admin2 })
+            expectEvent.inLogs(logs, 'TwitterIDUpdated', { _user: admin2 })
+        })
 
-    //     it('Can view all data for a single user', async () => {
-    //         let userId = await users.userID(admin2)
-    //         let data = await users.users(userId)
-    //         expect(data.name).to.be.equal('admin 2')
-    //     })
+        it('Can view all data for a single user', async () => {
+            let userId = await users.userID(admin2)
+            let data = await users.users(userId)
+            expect(data.name).to.be.equal('admin 2')
+        })
 
-    //     it('Can view summary data on all users', async () => {
-    //         await users.enroll("member1", "twitterID-member1", "URL-member1", { from: member1 })
-    //         await users.enroll("member2", "twitterID-member2", "URL-member2", { from: member2 })
-    //         let data = await users.getUsers()
-    //         let nonce = data._nonce.toNumber()
-    //         // for (let i = 0; i < nonce; i++)
-    //         //     console.log(`\nUser #${i}: ${data._names[i]} (Role: ${data._roles[i]})`)
-    //         let member2URL = data._imageUrls[3]
-    //         let member1Name = data._names[2]
-    //         expect(member2URL).to.be.equal('URL-member2')
-    //         expect(member1Name).to.be.equal('member1')
-    //     })
-    // })
+        it('Can view summary data on all users', async () => {
+            await users.enroll("member1", "twitterID-member1", "URL-member1", { from: member1 })
+            await users.enroll("member2", "twitterID-member2", "URL-member2", { from: member2 })
+            let data = await users.getUsers()
+            let nonce = data._nonce.toNumber()
+            // for (let i = 0; i < nonce; i++)
+            //     console.log(`\nUser #${i}: ${data._names[i]} (Role: ${data._roles[i]})`)
+            let member2URL = data._imageUrls[3]
+            let member1Name = data._names[2]
+            expect(member2URL).to.be.equal('URL-member2')
+            expect(member1Name).to.be.equal('member1')
+        })
+    })
 
-    // describe("Announcement Functionality", async () => {
-    //     it('onlyAdmin() for all announcement state mutations', async () => {
-    //         await expectRevert(
-    //             announcements.addAnnouncement('Title1', 'Body1', true, { from: member2 }),
-    //             "Address not authenticated for this action"
-    //         )
-    //         await expectRevert(
-    //             announcements.pinAnnouncement(1, { from: member2 }),
-    //             "Address not authenticated for this action"
-    //         )
-    //     })
+    describe("Announcement Functionality", async () => {
+        it('onlyAdmin() for all announcement state mutations', async () => {
+            await expectRevert(
+                announcements.addAnnouncement('Title1', 'Body1', true, { from: member2 }),
+                "Address not authenticated for this action"
+            )
+            await expectRevert(
+                announcements.pinAnnouncement(1, { from: member2 }),
+                "Address not authenticated for this action"
+            )
+        })
 
-    //     it('Add announcement without pinning', async () => {
-    //         let { logs } = await announcements.addAnnouncement(
-    //             'Unpinned Title',
-    //             'Unpinned Body',
-    //             false,
-    //             { from: admin1 }
-    //         )
-    //         expectEvent.inLogs(logs, 'AnnouncementAdded', { _nonce: new BN(1) })
-    //         let pinned = await announcements.pinnedAnnouncement();
-    //         expect(pinned.toNumber()).to.be.not.equal(1)
-    //     })
+        it('Add announcement without pinning', async () => {
+            let { logs } = await announcements.addAnnouncement(
+                'Unpinned Title',
+                'Unpinned Body',
+                false,
+                { from: admin1 }
+            )
+            expectEvent.inLogs(logs, 'AnnouncementAdded', { _nonce: new BN(1) })
+            let pinned = await announcements.pinnedAnnouncement();
+            expect(pinned.toNumber()).to.be.not.equal(1)
+        })
 
-    //     it('Add announcement and pin', async () => {
-    //         let { logs } = await announcements.addAnnouncement(
-    //             'Pinned Title',
-    //             'Pinned Body',
-    //             true,
-    //             { from: admin1 }
-    //         )
-    //         expectEvent.inLogs(logs, 'AnnouncementAdded', { _nonce: new BN(2) })
-    //         expectEvent.inLogs(logs, 'AnnouncementPinned', { _nonce: new BN(2) })
-    //         let pinned = await announcements.pinnedAnnouncement();
-    //         expect(pinned.toNumber()).to.be.equal(2)
-    //     })
+        it('Add announcement and pin', async () => {
+            let { logs } = await announcements.addAnnouncement(
+                'Pinned Title',
+                'Pinned Body',
+                true,
+                { from: admin1 }
+            )
+            expectEvent.inLogs(logs, 'AnnouncementAdded', { _nonce: new BN(2) })
+            expectEvent.inLogs(logs, 'AnnouncementPinned', { _nonce: new BN(2) })
+            let pinned = await announcements.pinnedAnnouncement();
+            expect(pinned.toNumber()).to.be.equal(2)
+        })
 
-    //     it('Pin an existing announcement', async () => {
-    //         let { logs } = await announcements.pinAnnouncement(1)
-    //         expectEvent.inLogs(logs, 'AnnouncementPinned', { _nonce: new BN(1) })
-    //     })
-    //     it('Cannot pin already pinned announcement or no announcement', async () => {
-    //         await expectRevert(
-    //             announcements.pinAnnouncement(0),
-    //             "Core: cannot set no pinned announcement!"
-    //         )
-    //         await expectRevert(
-    //             announcements.pinAnnouncement(1),
-    //             "Core: Announcement already pinned!"
-    //         )
-    //     })
-    //     it('Return data for all announcements', async () => {
-    //         await announcements.addAnnouncement('Title3', 'Body3', true, { from: admin1 })
-    //         let data = await announcements.getAnnouncements()
-    //         let nonce = await data._nonce.toNumber()
-    //         // console.log("Pinned Announcement: ", data._pinned.toNumber())
-    //         // for (let i = 0; i < nonce; i++)
-    //         //     console.log(`Announcement #${i + 1} - Title: ${data._titles[i]}; Body: ${data._bodies[i]}`)
-    //         expect(data._titles[1]).to.be.equal('Pinned Title')
-    //         expect(data._bodies[2]).to.be.equal('Body3')
-    //         expect(data._pinned.toNumber()).to.be.equal(nonce)
-    //     })
-    // })
+        it('Pin an existing announcement', async () => {
+            let { logs } = await announcements.pinAnnouncement(1)
+            expectEvent.inLogs(logs, 'AnnouncementPinned', { _nonce: new BN(1) })
+        })
+        it('Cannot pin already pinned announcement or no announcement', async () => {
+            await expectRevert(
+                announcements.pinAnnouncement(0),
+                "Core: cannot set no pinned announcement!"
+            )
+            await expectRevert(
+                announcements.pinAnnouncement(1),
+                "Core: Announcement already pinned!"
+            )
+        })
+        it('Return data for all announcements', async () => {
+            await announcements.addAnnouncement('Title3', 'Body3', true, { from: admin1 })
+            let data = await announcements.getAnnouncements()
+            let nonce = await data._nonce.toNumber()
+            // console.log("Pinned Announcement: ", data._pinned.toNumber())
+            // for (let i = 0; i < nonce; i++)
+            //     console.log(`Announcement #${i + 1} - Title: ${data._titles[i]}; Body: ${data._bodies[i]}`)
+            expect(data._titles[1]).to.be.equal('Pinned Title')
+            expect(data._bodies[2]).to.be.equal('Body3')
+            expect(data._pinned.toNumber()).to.be.equal(nonce)
+        })
+    })
 
-    // describe("Item Functionality", async () => {
-    //     before(async () => {
-    //         await users.enroll("member3", "twitter", "image", { from: member3 })
-    //         await bounties.addBounty("a", "b", "c", 1000, true, 0, true, "", { from: admin1 })
-    //         await bounties.applyForBounty(1, { from: member1 })
-    //         await bounties.applyForBounty(1, { from: member3 })
-    //         await bounties.approveBountyRequest(1, 1, { from: admin1 })
-    //         await bounties.approveBountyRequest(1, 1, { from: admin1 })
-    //     })
-    //     it('Admin can add a new infinite item', async () => {
-    //         let { logs } = await items.addItem("Title", "Body", "URL", 10, true, 0, { from: admin1 })
-    //         expectEvent.inLogs(logs, 'ItemAdded', { _nonce: new BN(1)})
-    //         let data = await items.getItems()
-    //         expect(data._titles[0]).to.be.equal("Title")
-    //         expect(data._costs[0]).to.be.bignumber.equal(new BN(10))
-    //         let { logs: logs2 } = await items.buyItem(1, { from: member1 })
-    //         expectEvent.inLogs(
-    //             logs2,
-    //             'ItemPurchased',
-    //             { _nonce: new BN(1), _by: member1, _burned: data._costs[0] }
-    //         )
-    //         data = await items.getItems()
-    //         expect(data._infinites[0] && data._actives[0]).to.be.true
-    //         await expectRevert(
-    //             items.addItem("", "", "", 1, true, 0, { from: member1 }),
-    //             "Address not authenticated for this action"
-    //         )
-    //         await expectRevert(
-    //             items.buyItem(1, { from: member1 }),
-    //             "User already owns item"
-    //         )
-    //     })
-    //     it('Admin can add a new finite item', async () => {
-    //         await items.addItem("Title2", "Body2", "URL2", 10, false, 1, { from: admin1 })
-    //         await items.buyItem(2, { from: member1 })
-    //         await expectRevert(
-    //             items.buyItem(2, { from: member3 }),
-    //             "Item not for sale"
-    //         )
-    //         let data = await items.getItems()
-    //         expect(data._infinites[1] && data._actives[1]).to.be.false
-    //     })
-    //     it('Admin can delist an item', async () => {
-    //         await expectRevert(
-    //             items.delistItem(1, { from: member1 }),
-    //             "Address not authenticated for this action"
-    //         )
-    //         let { logs } = await items.delistItem(1, { from: admin1 })
-    //         expectEvent.inLogs(logs, 'ItemDelisted', { _nonce: new BN(1) })
-    //         let data = await items.getItems()
-    //         expect(data._infinites[0] && data._actives[0]).to.be.false
-    //         await expectRevert(
-    //             items.buyItem(1, { from: member3 }),
-    //             "Item not for sale"
-    //         )
-    //         data = await items.getItems()
-    //         expect(data._infinites[0] && data._actives[0]).to.be.false
-    //     })
-    //     it('Users without sufficient balance cannot buy items', async () => {
-    //         await items.addItem("Title3", "Body3", "URL3", 10, false, 1, { from: admin1 })
-    //         await expectRevert(
-    //             items.buyItem(3, { from: member2 }),
-    //             "User has insufficient balance"
-    //         )
-    //     })
-    // })
+    describe("Item Functionality", async () => {
+        before(async () => {
+            await users.enroll("member3", "twitter", "image", { from: member3 })
+            await bounties.addBounty("a", "b", "c", 1000, true, 0, true, "", { from: admin1 })
+            await bounties.applyForBounty(1, { from: member1 })
+            await bounties.applyForBounty(1, { from: member3 })
+            await bounties.approveBountyRequest(1, 1, { from: admin1 })
+            await bounties.approveBountyRequest(1, 1, { from: admin1 })
+        })
+        it('Admin can add a new infinite item', async () => {
+            let { logs } = await items.addItem("Title", "Body", "URL", 10, true, 0, { from: admin1 })
+            expectEvent.inLogs(logs, 'ItemAdded', { _nonce: new BN(1)})
+            let data = await items.getItems()
+            expect(data._titles[0]).to.be.equal("Title")
+            expect(data._costs[0]).to.be.bignumber.equal(new BN(10))
+            let { logs: logs2 } = await items.buyItem(1, { from: member1 })
+            expectEvent.inLogs(
+                logs2,
+                'ItemPurchased',
+                { _nonce: new BN(1), _by: member1, _burned: data._costs[0] }
+            )
+            data = await items.getItems()
+            expect(data._infinites[0] && data._actives[0]).to.be.true
+            await expectRevert(
+                items.addItem("", "", "", 1, true, 0, { from: member1 }),
+                "Address not authenticated for this action"
+            )
+            await expectRevert(
+                items.buyItem(1, { from: member1 }),
+                "User already owns item"
+            )
+        })
+        it('Admin can add a new finite item', async () => {
+            await items.addItem("Title2", "Body2", "URL2", 10, false, 1, { from: admin1 })
+            await items.buyItem(2, { from: member1 })
+            await expectRevert(
+                items.buyItem(2, { from: member3 }),
+                "Item not for sale"
+            )
+            let data = await items.getItems()
+            expect(data._infinites[1] && data._actives[1]).to.be.false
+        })
+        it('Admin can delist an item', async () => {
+            await expectRevert(
+                items.delistItem(1, { from: member1 }),
+                "Address not authenticated for this action"
+            )
+            let { logs } = await items.delistItem(1, { from: admin1 })
+            expectEvent.inLogs(logs, 'ItemDelisted', { _nonce: new BN(1) })
+            let data = await items.getItems()
+            expect(data._infinites[0] && data._actives[0]).to.be.false
+            await expectRevert(
+                items.buyItem(1, { from: member3 }),
+                "Item not for sale"
+            )
+            data = await items.getItems()
+            expect(data._infinites[0] && data._actives[0]).to.be.false
+        })
+        it('Users without sufficient balance cannot buy items', async () => {
+            await items.addItem("Title3", "Body3", "URL3", 10, false, 1, { from: admin1 })
+            await expectRevert(
+                items.buyItem(3, { from: member2 }),
+                "User has insufficient balance"
+            )
+        })
+    })
 
     describe("Bounty Functionality", async () => {
-        xit('Admin can add a new infinite manual bounty', async () => {
+        it('Admin can add a new infinite manual bounty', async () => {
             let { logs } = await bounties.addBounty(
                 'bounty1-title',
                 'bounty1-description',
@@ -236,7 +236,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             expect(data._titles[1]).to.be.equal('bounty1-title')
             expect(data._infinites[1] && data._actives[1] && data._manuals[1]).to.be.true
         })
-        xit('Admin can add a new finite bounty', async () => {
+        it('Admin can add a new finite bounty', async () => {
             let { logs } = await bounties.addBounty(
                 'bounty2-title',
                 'bounty2-description',
@@ -263,7 +263,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             expect(!data._infinites[2] && !data._actives[2] && data._manuals[2]).to.be.true
             expect(data._quantities[2].toNumber()).to.be.equal(0)
         })
-        xit('Only admin can list a bounty', async () => {
+        it('Only admin can list a bounty', async () => {
             await expectRevert(
                 bounties.addBounty(
                     'revert-title',
@@ -279,7 +279,7 @@ contract('OrgToken Unit Testing', (accounts) => {
                 "Address not authenticated for this action"
             )
         })
-        xit('Admin can delist a bounty', async () => {
+        it('Admin can delist a bounty', async () => {
             let { logs } = await bounties.addBounty(
                 'bounty3-title',
                 'bounty3-description',
@@ -303,7 +303,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             expect(data._actives[3]).to.be.false
         })
 
-        xit('Users can apply for bounties', async () => {
+        it('Users can apply for bounties', async () => {
             let { logs } = await bounties.addBounty(
                 'bounty4-title',
                 'bounty4-description',
@@ -327,7 +327,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             expect(data._users[0]).to.be.equal(member1)
             expect(data._bounties[1]).to.be.bignumber.equal(bountyNonce)
         })
-        xit('Admin can accept or manually accept or reject requests for approval', async () => {
+        it('Admin can accept or manually accept or reject requests for approval', async () => {
             let bountyNonce = new BN(5)
             let oldBalance = (await users.balanceOf(member1)).toNumber()
             let { logs } = await bounties.approveBountyRequest(1, 1, { from: admin1 })
@@ -346,7 +346,7 @@ contract('OrgToken Unit Testing', (accounts) => {
             expect(userBounties.includes(bountyNonce.toNumber())).to.be.true
             await bounties.rejectBountyRequest(1, 1, { from: admin1 })
         })
-        xit('Users rejected from bounty application are blacklisted from the bounty for 24 hours', async () => {
+        it('Users rejected from bounty application are blacklisted from the bounty for 24 hours', async () => {
             let bountyNonce = new BN(5)
             await expectRevert(
                 bounties.applyForBounty(bountyNonce, { from: member2 }),
