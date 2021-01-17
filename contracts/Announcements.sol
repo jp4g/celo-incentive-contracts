@@ -6,10 +6,8 @@ import "./interfaces/IAnnouncements.sol";
 
 contract Announcements is IAnnouncements {
     //@param _users - the address of the deployed users contract
-    //@param _forwarder - the address of the gsn trusted forwarder
-    constructor(address _users, address _forwarder) public {
+    constructor(address _users) public {
         userContract = IUsers(_users);
-        trustedForwarder = _forwarder;
     }
 
     function pinAnnouncement(uint256 _nonce) public override onlyAdmin() {

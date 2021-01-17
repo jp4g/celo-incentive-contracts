@@ -8,16 +8,13 @@ contract Users is IUsers {
     // @param _name - the name of the admin
     // @param _twitterId - the twitter id of the admin
     // @param _imageUrl - the google profile photo of the admin
-    // @param _forwarder - the address of the gsn trusted forwarder
     constructor(
         string memory _name,
         string memory _twitterId,
-        string memory _imageUrl,
-        address _forwarder
+        string memory _imageUrl
     ) public {
         enroll(_name, _twitterId, _imageUrl);
         users[userNonce].role = Role.Administrator;
-        trustedForwarder = _forwarder;
     }
 
     /// MUTABLE FUNCTIONS ///
@@ -27,16 +24,16 @@ contract Users is IUsers {
         string memory _twitterId,
         string memory _imageUrl
     ) public override returns (uint256 _nonce) {
-        require(userID[_msgSender()] == 0, "User is enrolled");
+        require(userID[msg.sender] == 0, "User is enrolled");
         userNonce = userNonce.add(1);
-        userID[_msgSender()] = userNonce;
+        userID[msg.sender] = userNonce;
         User storage user = users[userNonce];
         user.name = _name;
         user.twitterId = _twitterId;
         user.imageUrl = _imageUrl;
-        user.at = _msgSender();
+        user.at = msg.sender;
         user.role = Role.Member;
-        emit UserEnrolled(_msgSender());
+        emit UserEnrolled(msg.sender);
         _nonce = userNonce;
     }
 
@@ -48,8 +45,8 @@ contract Users is IUsers {
     }
 
     function setTwitterId(string memory _twitterId) public override {
-        users[userID[_msgSender()]].twitterId = _twitterId;
-        emit TwitterIDUpdated(_msgSender());
+        users[userID[msg.sender]].twitterId = _twitterId;
+        emit TwitterIDUpdated(msg.sender);
     }
 
     function setBounty(address _at) public override {

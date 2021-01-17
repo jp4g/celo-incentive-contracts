@@ -3,24 +3,15 @@ pragma solidity >=0.6.0 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "./interfaces/IBounties.sol";
-import "./interfaces/ITwitterConsumer.sol";
 
 contract Bounties is IBounties {
     //@param _users - the address of the deployed users contract
-    //@param _forwarder - the address of the gsn trusted forwarder
-    constructor(address _users, address _forwarder) public {
+    constructor(address _users) public {
         userContract = IUsers(_users);
         userContract.setBounty(address(this));
-        trustedForwarder = _forwarder;
     }
 
     /// MUTABLE FUNCTIONS ///
-
-    function setConsumer(address _at) public override {
-        require(consumerContract == address(0));
-        consumerContract = _at;
-        consumerInstance = ITwitterConsumer(_at);
-    }
 
     function addBounty(
         string memory _title,
@@ -34,7 +25,7 @@ contract Bounties is IBounties {
     )
         public
         override
-        adminOrTwitter(uint256(Trigger.Manual))
+        onlyAdmin()
         returns (uint256 _nonce)
     {
         bountyNonce = bountyNonce.add(1);
@@ -65,23 +56,24 @@ contract Bounties is IBounties {
         pendingIndices[trigger] = pendingIndices[trigger].add(1);
         pendingRequests[trigger][pendingIndices[trigger]] = requestNonce;
         Request storage request = requests[requestNonce];
-        request.user = _msgSender();
+        request.user = msg.sender;
         request.bounty = _nonce;
         request.pendingIndex = pendingIndices[trigger];
-        bounty.status[_msgSender()] = BountyState.Pending;
-        if (bounty.trigger == Trigger.Twitter) {
-            string memory userId = userContract.getTwitterId(request.user);
-            string memory tweetId = bounty.tweet;
-            bytes32 requestId = consumerInstance.checkRetweets(userId, tweetId);
-            chainlinkRequests[requestId] = requestNonce;
-            nonceToRequestId[requestNonce] = requestId;
-        }
-        emit BountyApplication(_nonce, _msgSender(), requestNonce);
+        bounty.status[msg.sender] = BountyState.Pending;
+        // if (bounty.trigger == Trigger.Twitter) {
+        //     string memory userId = userContract.getTwitterId(request.user);
+        //     string memory tweetId = bounty.tweet;
+        //     bytes32 requestId = consumerInstance.checkRetweets(userId, tweetId);
+        //     chainlinkRequests[requestId] = requestNonce;
+        //     nonceToRequestId[requestNonce] = requestId;
+        // }
+        emit BountyApplication(_nonce, msg.sender, requestNonce);
     }
 
     function approveBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
+        onlyAdmin()
     {
         uint256 requestNonce = pendingRequests[_trigger][_index];
         Request memory request = requests[requestNonce];
@@ -101,7 +93,7 @@ contract Bounties is IBounties {
     function rejectBountyRequest(uint256 _trigger, uint256 _index)
         public
         override
-        adminOrTwitter(uint256(Trigger.Twitter))
+        onlyAdmin()
     {
         uint256 requestNonce = pendingRequests[_trigger][_index];
         Request memory request = requests[requestNonce];
@@ -116,7 +108,7 @@ contract Bounties is IBounties {
     function delistBounty(uint256 _nonce)
         public
         override
-        adminOrTwitter(uint256(Trigger.Manual))
+        onlyAdmin()
     {
         Bounty storage bounty = bounties[_nonce];
         bounty.active = false;
@@ -142,17 +134,6 @@ contract Bounties is IBounties {
         }
         pendingRequests[_trigger][pendingIndex] = 0;
         pendingIndices[_trigger] = pendingIndices[_trigger].sub(1);
-    }
-
-    function fulfillChainlinkRequest(bytes32 _requestId, bool _status)
-        public
-        override
-    {
-        uint256 trigger = uint256(Trigger.Twitter);
-        Request storage request = requests[chainlinkRequests[_requestId]];
-        if (_status) approveBountyRequest(trigger, request.pendingIndex);
-        else rejectBountyRequest(trigger, request.pendingIndex);
-        request.fulfilled = true;
     }
 
     /// VIEWABLE FUNCTIONS ///
@@ -236,14 +217,5 @@ contract Bounties is IBounties {
         returns (bool)
     {
         return userHasBounty[_bountyNonce][_user];
-    }
-
-    function checkFulfillment(uint256 _nonce)
-        public
-        view
-        override
-        returns (bool)
-    {
-        return requests[_nonce].fulfilled;
     }
 }

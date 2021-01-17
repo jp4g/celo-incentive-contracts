@@ -4,10 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IUsers.sol";
-import "../interfaces/ITwitterConsumer.sol";
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-abstract contract IBounties is BaseRelayRecipient {
+abstract contract IBounties {
     /// LIBRARIES ///
 
     using SafeMath for uint256;
@@ -32,32 +30,30 @@ abstract contract IBounties is BaseRelayRecipient {
             "Bounty not available for application"
         );
         require(
-            tempban[_bounty][_msgSender()] < now.sub(1 days),
+            tempban[_bounty][msg.sender] < now.sub(1 days),
             "Tempbanned < 24 hours ago"
         );
         require(
-            bounties[_bounty].status[_msgSender()] != BountyState.Awarded,
+            bounties[_bounty].status[msg.sender] != BountyState.Awarded,
             "User has has bounty"
         );
         require(
-            bounties[_bounty].status[_msgSender()] != BountyState.Pending,
+            bounties[_bounty].status[msg.sender] != BountyState.Pending,
             "User has pending approval"
         );
         _;
     }
 
-    modifier adminOrTwitter(uint _trigger) {
+    modifier onlyAdmin() {
         require(
-            _trigger == uint(Trigger.Twitter) ||
-            userContract.role(_msgSender()) == 2,
+            userContract.role(msg.sender) == 2,
             "Address not authenticated for this action"
         );
         _;
     }
 
     IUsers userContract;
-    ITwitterConsumer consumerInstance;
-    address public consumerContract;
+
     uint256 public bountyNonce;
     uint256 public requestNonce;
     mapping(uint256 => Bounty) public bounties; //bounty nonce to bounty struct
@@ -65,20 +61,9 @@ abstract contract IBounties is BaseRelayRecipient {
     mapping(uint256 => uint256) pendingIndices; //trigger enum to pending requests for that trigger
     mapping(uint256 => mapping(uint256 => uint256)) pendingRequests; //trigger to pending index to request nonce
     mapping(uint256 => mapping(address => uint256)) tempban; //bounty nonce to user to timecode of ban
-    mapping(bytes32 => uint256) chainlinkRequests; //chainlink request to request nonce
-    mapping(uint256  => mapping(address => bool)) userHasBounty; // bounty nonce to user address to bool
-    mapping(uint256 => bytes32) nonceToRequestId;
-    string public override versionRecipient = "2.0.0";
+    mapping(uint256  => mapping(address => bool)) userHasBounty;
 
     /// MUTABLE FUNCTIONS ///
-
-    /**
-     * Initialization function to set consumer contract address for permissions
-     * @dev require consumer contract address == address (0)
-     *
-     * @param _at - the address of the consumer contract
-     */
-    function setConsumer(address _at) public virtual;
 
     /**
      * Add a new bounty to the chain
@@ -141,17 +126,6 @@ abstract contract IBounties is BaseRelayRecipient {
      * @param _nonce - the index of the bounty within the contract
      */
     function delistBounty(uint256 _nonce) public virtual;
-
-    /**
-     * Function is called when a Chainlink request is fufilled
-     *
-     * @param _requestId - The id of the Chainlink request that is completed
-     * @param _status - The status that resolves to whether or not the user has retweeted a particular tweet
-     *
-     */
-    function fulfillChainlinkRequest(bytes32 _requestId, bool _status)
-        public
-        virtual;
 
     /// VIEWABLE FUNCTIONS ///
 
@@ -226,21 +200,6 @@ abstract contract IBounties is BaseRelayRecipient {
         view
         virtual
         returns (bool);
-
-    /**
-     * Function determines if a Chainlink request has been fufilled or not
-     *
-     * @param _nonce - The requestId of the chainlink job
-     *
-     */
-    function checkFulfillment(uint _nonce) public view virtual returns (bool);
-
-    /**
-     * GSN Forwarder Call
-     */
-    function getTrustedForwarder() external view returns(address) {
-        return trustedForwarder;
-    }
 }
 
 enum BountyState {None, Pending, Awarded}

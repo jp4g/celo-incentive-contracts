@@ -4,9 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import "../interfaces/IUsers.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
-abstract contract IItems is BaseRelayRecipient {
+abstract contract IItems {
     /// LIBRARIES ///
 
     using SafeMath for uint256;
@@ -26,16 +25,16 @@ abstract contract IItems is BaseRelayRecipient {
             "Item not in stock"
         );
         require(
-            userContract.balanceOf(_msgSender()) >= items[_item].cost,
+            userContract.balanceOf(msg.sender) >= items[_item].cost,
             "User has insufficient balance"
         );
-        require(!items[_item].purchased[_msgSender()], "User already owns item");
+        require(!items[_item].purchased[msg.sender], "User already owns item");
         _;
     }
 
     modifier onlyAdmin() {
         require(
-            userContract.role(_msgSender()) == 2,
+            userContract.role(msg.sender) == 2,
             "Address not authenticated for this action"
         );
         _;
@@ -44,7 +43,6 @@ abstract contract IItems is BaseRelayRecipient {
     IUsers userContract;
     uint256 public itemNonce;
     mapping(uint256 => Item) public items;
-    string public override versionRecipient = "2.0.0";
 
     /// MUTABLE FUNCTIONS ///
 
@@ -114,13 +112,6 @@ abstract contract IItems is BaseRelayRecipient {
             uint256[] memory _quantities,
             bool[] memory _actives
         );
-    
-    /**
-     * GSN Forwarder Call
-     */
-    function getTrustedForwarder() external view returns(address) {
-        return trustedForwarder;
-    }
 }
 
 struct Item {
